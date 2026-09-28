@@ -1,0 +1,145 @@
+<div class="register-container">
+  <div class="register-card">
+
+    <h1>Restaurant Reservation</h1>
+    <h2>Customer Registration</h2>
+
+    <form (ngSubmit)="register()">
+
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+
+        <input
+          type="text"
+          id="fullName"
+          name="fullName"
+          [(ngModel)]="fullName"
+          #nameField="ngModel"
+          placeholder="Enter your full name"
+          required
+        />
+
+        <small
+          class="error"
+          *ngIf="nameField.invalid && nameField.touched"
+        >
+          Full name is required.
+        </small>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="email"
+          #emailField="ngModel"
+          placeholder="Enter your email"
+          required
+        />
+
+        <small
+          class="error"
+          *ngIf="emailField.invalid && emailField.touched"
+        >
+          <span *ngIf="emailField.errors?.['required']">
+            Email is required.
+          </span>
+
+          <span *ngIf="emailField.errors?.['email']">
+            Please enter a valid email.
+          </span>
+        </small>
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          [(ngModel)]="phone"
+          #phoneField="ngModel"
+          placeholder="Enter your phone number"
+          required
+          minlength="10"
+          maxlength="10"
+        />
+
+        <small
+          class="error"
+          *ngIf="phoneField.invalid && phoneField.touched"
+        >
+          <span *ngIf="phoneField.errors?.['required']">
+            Phone number is required.
+          </span>
+
+          <span *ngIf="phoneField.errors?.['minlength']">
+            Phone number must contain 10 digits.
+          </span>
+        </small>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          #passwordField="ngModel"
+          placeholder="Enter your password"
+          required
+          minlength="6"
+        />
+
+        <small
+          class="error"
+          *ngIf="passwordField.invalid && passwordField.touched"
+        >
+          <span *ngIf="passwordField.errors?.['required']">
+            Password is required.
+          </span>
+
+          <span *ngIf="passwordField.errors?.['minlength']">
+            Password must contain at least 6 characters.
+          </span>
+        </small>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+
+        <input
+          type="password"
+          id="confirmPassword"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          placeholder="Confirm your password"
+          required
+        />
+      </div>
+
+      <!-- Register Button -->
+      <button type="submit">
+        Register
+      </button>
+
+    </form>
+
+    <p>
+      Already have an account?
+      <a routerLink="/login">Login</a>
+    </p>
+
+  </div>
+</div>
