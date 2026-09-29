@@ -1,9 +1,194 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { RestaurantService } from '../../core/services/restaurant.service';
+import { ReservationService } from '../../core/services/reservation.service';
+import { QueueService } from '../../core/services/queue.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Restaurant } from '../../core/models/restaurant.model';
+import { Table } from '../../core/models/table.model';
+import { Reservation } from '../../core/models/reservation.model';
+import { QueueTicket } from '../../core/models/queue-ticket.model';
+import { User } from '../../core/models/user.model';
 
 @Component({
-  imports: [],
   selector: 'app-dashboard',
-  styleUrl: './dashboard.css',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard.html',
+  styleUrl: './dashboard.css',
 })
-export class Dashboard {}
+export class Dashboard implements OnInit {
+  // Current logged in user profile
+  currentUser: User | null = null;
+  customerDisplayName: string = 'Customer';
+
+  // Restaurant data and search/filter states
+  restaurants: Restaurant[] = [];
+  filteredRestaurants: Restaurant[] = [];
+  searchQuery: string = '';
+  selectedCuisine: string = 'ALL';
+  cuisines: string[] = ['ALL'];
+
+  // Table availability per restaurant { [restaurantId]: { total, available } }
+  tableAvailability: { [restaurantId: number]: { total: number; available: number } } = {};
+
+  // Summary counts
+  upcomingReservationsCount: number = 0;
+  upcomingReservations: Reservation[] = [];
+  currentQueueTicket: QueueTicket | null = null;
+
+  // View Tables Modal
+  selectedRestaurantForTables: Restaurant | null = null;
+  selectedRestaurantTables: Table[] = [];
+  showTablesModal: boolean = false;
+
+  // Feedback banner
+  feedbackMessage: string = '';
+
+  // Mobile navigation toggle
+  isMobileMenuOpen: boolean = false;
+
+  constructor(
+    private restaurantService: RestaurantService,
+    private reservationService: ReservationService,
+    private queueService: QueueService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.loadCurrentUser();
+    this.loadRestaurants();
+    this.loadSummaryData();
+  }
+
+  loadCurrentUser(): void {
+    this.currentUser = this.authService.getCurrentUser();
+    if (this.currentUser && this.currentUser.name) {
+      this.customerDisplayName = this.currentUser.name;
+    }
+  }
+
+  loadRestaurants(): void {
+    this.restaurantService.getRestaurants().subscribe({
+      next: (data) => {
+        this.restaurants = data;
+        this.filteredRestaurants = data;
+
+        // Build unique cuisine list for filter
+        const cuisineSet = new Set<string>();
+        data.forEach((r) => {
+          if (r.cuisine) {
+            cuisineSet.add(r.cuisine);
+          }
+        });
+        this.cuisines = ['ALL', ...Array.from(cuisineSet)];
+
+        // Load table count for each restaurant
+        data.forEach((r) => {
+          this.restaurantService.getTablesByRestaurantId(r.id).subscribe((tables) => {
+            const availableCount = tables.filter((t) => t.available).length;
+            this.tableAvailability[r.id] = {
+              total: tables.length,
+              available: availableCount,
+            };
+          });
+        });
+      },
+    });
+  }
+
+  loadSummaryData(): void {
+    const customerId = this.currentUser ? this.currentUser.id : 1;
+
+    // Upcoming reservations
+    this.reservationService.getReservationsByCustomerId(customerId).subscribe({
+      next: (reservations) => {
+        this.upcomingReservations = reservations;
+        this.upcomingReservationsCount = reservations.filter(
+          (r) => r.status === 'CONFIRMED' || r.status === 'PENDING'
+        ).length;
+      },
+    });
+
+    // Queue status
+    this.queueService.getQueueStatus(customerId).subscribe({
+      next: (ticket) => {
+        this.currentQueueTicket = ticket || null;
+      },
+    });
+  }
+
+  filterRestaurants(): void {
+    const query = this.searchQuery.trim().toLowerCase();
+
+    this.filteredRestaurants = this.restaurants.filter((restaurant) => {
+      const matchesSearch =
+        query === '' ||
+        restaurant.name.toLowerCase().includes(query) ||
+        restaurant.location.toLowerCase().includes(query) ||
+        restaurant.cuisine.toLowerCase().includes(query);
+
+      const matchesCuisine =
+        this.selectedCuisine === 'ALL' || restaurant.cuisine === this.selectedCuisine;
+
+      return matchesSearch && matchesCuisine;
+    });
+  }
+
+  onSearchChange(): void {
+    this.filterRestaurants();
+  }
+
+  onCuisineChange(cuisine: string): void {
+    this.selectedCuisine = cuisine;
+    this.filterRestaurants();
+  }
+
+  openTablesModal(restaurant: Restaurant): void {
+    this.selectedRestaurantForTables = restaurant;
+    this.restaurantService.getTablesByRestaurantId(restaurant.id).subscribe({
+      next: (tables) => {
+        this.selectedRestaurantTables = tables;
+        this.showTablesModal = true;
+      },
+    });
+  }
+
+  closeTablesModal(): void {
+    this.showTablesModal = false;
+    this.selectedRestaurantForTables = null;
+    this.selectedRestaurantTables = [];
+  }
+
+  onReserveClick(restaurant: Restaurant): void {
+    this.feedbackMessage = `Table reservation for "${restaurant.name}" selected! Full reservation booking wizard is in development for Phase 5.`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      this.feedbackMessage = '';
+    }, 5000);
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
+  }
+
+  scrollToSection(sectionId: string): void {
+    this.closeMobileMenu();
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}

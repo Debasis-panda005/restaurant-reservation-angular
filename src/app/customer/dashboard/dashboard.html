@@ -1,1 +1,292 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+
+  <!-- 1. Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <span class="brand-icon">🍽️</span>
+        <span class="brand-title">Restaurant Reservation</span>
+      </div>
+
+      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links" [class.open]="isMobileMenuOpen">
+        <a class="nav-item active" (click)="scrollToSection('welcome-section')">Dashboard</a>
+        <a class="nav-item" (click)="scrollToSection('summary-section')">Overview</a>
+        <a class="nav-item" (click)="scrollToSection('restaurants-section')">Restaurants</a>
+        <a class="nav-item" (click)="scrollToSection('summary-section')">My Reservations</a>
+        <a class="nav-item" (click)="scrollToSection('summary-section')">Queue Status</a>
+        <button class="logout-btn" (click)="logout()">
+          <span>Logout</span>
+          <span class="logout-icon">🚪</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="feedbackMessage" class="feedback-banner">
+    <span>ℹ️ {{ feedbackMessage }}</span>
+    <button class="close-banner" (click)="feedbackMessage = ''">✕</button>
+  </div>
+
+  <main class="dashboard-content">
+
+    <!-- 2. Welcome Hero Section -->
+    <section id="welcome-section" class="welcome-hero">
+      <div class="hero-text">
+        <span class="welcome-badge">Customer Portal</span>
+        <h1>Welcome, {{ customerDisplayName }}!</h1>
+        <p class="hero-description">
+          Discover handpicked fine dining, reserve your favorite tables in real-time,
+          or track your live queue status without waiting in physical lines.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" (click)="scrollToSection('restaurants-section')">
+            🔍 Browse Restaurants
+          </button>
+          <button class="btn btn-outline" (click)="scrollToSection('summary-section')">
+            📋 View My Status
+          </button>
+        </div>
+      </div>
+      <div class="hero-decorative">
+        <div class="hero-stat-card">
+          <span class="stat-icon">⚡</span>
+          <div>
+            <strong>Instant Booking</strong>
+            <small>Guaranteed table confirmation</small>
+          </div>
+        </div>
+        <div class="hero-stat-card">
+          <span class="stat-icon">🕒</span>
+          <div>
+            <strong>Smart Queue</strong>
+            <small>Live estimated wait times</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Summary Section -->
+    <section id="summary-section" class="summary-section">
+      <h2 class="section-title">Activity & Status Summary</h2>
+      <div class="summary-grid">
+
+        <!-- Available Restaurants Card -->
+        <div class="summary-card">
+          <div class="summary-header">
+            <span class="summary-icon blue">🏪</span>
+            <span class="summary-tag">Partner Outlets</span>
+          </div>
+          <div class="summary-value">{{ restaurants.length }}</div>
+          <div class="summary-label">Available Restaurants</div>
+          <p class="summary-hint">Verified dining venues ready for reservations.</p>
+        </div>
+
+        <!-- Upcoming Reservations Card -->
+        <div class="summary-card">
+          <div class="summary-header">
+            <span class="summary-icon green">📅</span>
+            <span class="summary-tag">Bookings</span>
+          </div>
+          <div class="summary-value">{{ upcomingReservationsCount }}</div>
+          <div class="summary-label">Upcoming Reservations</div>
+          <div *ngIf="upcomingReservations.length > 0; else noBookings" class="summary-subtext">
+            <span>Next: {{ upcomingReservations[0].date }} at {{ upcomingReservations[0].time }}</span>
+            <span class="status-badge" [class.confirmed]="upcomingReservations[0].status === 'CONFIRMED'">
+              {{ upcomingReservations[0].status }}
+            </span>
+          </div>
+          <ng-template #noBookings>
+            <p class="summary-hint">No active reservations at the moment.</p>
+          </ng-template>
+        </div>
+
+        <!-- Current Queue Status Card -->
+        <div class="summary-card">
+          <div class="summary-header">
+            <span class="summary-icon orange">⏱️</span>
+            <span class="summary-tag">Live Waitlist</span>
+          </div>
+          <div *ngIf="currentQueueTicket; else noQueue">
+            <div class="summary-value">{{ currentQueueTicket.ticketNumber }}</div>
+            <div class="summary-label">Active Queue Token</div>
+            <div class="queue-details">
+              <span>👥 <strong>{{ currentQueueTicket.peopleAhead }}</strong> parties ahead</span>
+              <span>⏳ ~<strong>{{ currentQueueTicket.estimatedWaitMinutes }} mins</strong> wait</span>
+            </div>
+          </div>
+          <ng-template #noQueue>
+            <div class="summary-value inactive">None</div>
+            <div class="summary-label">Current Queue Status</div>
+            <p class="summary-hint">You are not currently in any waiting line.</p>
+          </ng-template>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. Restaurant Search & Filter Section -->
+    <section id="restaurants-section" class="restaurants-section">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title">Explore Restaurants</h2>
+          <p class="section-subtitle">
+            Showing {{ filteredRestaurants.length }} of {{ restaurants.length }} restaurants
+          </p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-box">
+          <span class="search-icon">🔎</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+            placeholder="Search by restaurant name, cuisine, or city..."
+            class="search-input"
+          />
+          <button *ngIf="searchQuery" class="clear-search" (click)="searchQuery = ''; onSearchChange()">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Cuisine Filter Pills -->
+      <div class="filter-pills">
+        <span class="filter-label">Filter Cuisine:</span>
+        <button
+          *ngFor="let cuisine of cuisines"
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedCuisine === cuisine"
+          (click)="onCuisineChange(cuisine)"
+        >
+          {{ cuisine === 'ALL' ? 'All Cuisines' : cuisine }}
+        </button>
+      </div>
+
+      <!-- 5. Restaurant Cards Grid -->
+      <div *ngIf="filteredRestaurants.length > 0; else noResults" class="restaurant-grid">
+        <div *ngFor="let r of filteredRestaurants" class="restaurant-card">
+
+          <!-- Card Header -->
+          <div class="card-header">
+            <div class="title-wrap">
+              <h3 class="restaurant-name">{{ r.name }}</h3>
+              <div class="restaurant-location">
+                <span class="loc-icon">📍</span>
+                <span>{{ r.location }}</span>
+              </div>
+            </div>
+            <div class="rating-badge">
+              <span>⭐</span>
+              <strong>{{ r.rating.toFixed(1) }}</strong>
+            </div>
+          </div>
+
+          <!-- Cuisine Tag -->
+          <div class="cuisine-tag-wrap">
+            <span class="cuisine-pill">🍲 {{ r.cuisine }}</span>
+          </div>
+
+          <!-- Description -->
+          <p class="restaurant-desc">{{ r.description }}</p>
+
+          <!-- Table Availability Status -->
+          <div class="availability-status">
+            <span class="avail-icon">🪑</span>
+            <div class="avail-info">
+              <span class="avail-title">Table Availability:</span>
+              <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="avail-count">
+                {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
+              </strong>
+              <ng-template #loadingTables>
+                <small>Checking tables...</small>
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- Card Action Buttons -->
+          <div class="card-actions">
+            <button class="btn btn-secondary" (click)="openTablesModal(r)">
+              👀 View Tables
+            </button>
+            <button class="btn btn-reserve" (click)="onReserveClick(r)">
+              ✨ Reserve Table
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- No Results State -->
+      <ng-template #noResults>
+        <div class="no-results-card">
+          <span class="no-results-icon">🍽️</span>
+          <h3>No matching restaurants found</h3>
+          <p>Try searching with another keyword or resetting the cuisine filter.</p>
+          <button class="btn btn-secondary" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
+            Reset Filters
+          </button>
+        </div>
+      </ng-template>
+
+    </section>
+
+  </main>
+
+  <!-- 6. View Tables Modal -->
+  <div *ngIf="showTablesModal && selectedRestaurantForTables" class="modal-backdrop" (click)="closeTablesModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>{{ selectedRestaurantForTables.name }} — Seating Layout</h3>
+          <p class="modal-subtitle">📍 {{ selectedRestaurantForTables.location }}</p>
+        </div>
+        <button class="modal-close-btn" (click)="closeTablesModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="table-instruction">Select a table to see availability details:</p>
+        <div class="tables-grid">
+          <div
+            *ngFor="let t of selectedRestaurantTables"
+            class="table-item"
+            [class.table-available]="t.available"
+            [class.table-booked]="!t.available"
+          >
+            <div class="table-top">
+              <span class="table-num">{{ t.tableNumber }}</span>
+              <span class="table-pill" [class.free]="t.available" [class.busy]="!t.available">
+                {{ t.available ? 'Available' : 'Occupied' }}
+              </span>
+            </div>
+            <div class="table-meta">
+              <span>👥 Capacity: <strong>{{ t.capacity }} Guests</strong></span>
+              <span>🌿 Zone: <strong>{{ t.seatingType }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeTablesModal()">Close</button>
+        <button class="btn btn-reserve" (click)="onReserveClick(selectedRestaurantForTables); closeTablesModal()">
+          Proceed to Reservation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="dashboard-footer">
+    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  </footer>
+
+</div>
