@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -17,6 +17,8 @@ export class Register {
   phone: string = '';
   password: string = '';
   confirmPassword: string = '';
+
+  constructor(private router: Router) {}
 
   register() {
 
@@ -36,6 +38,7 @@ export class Register {
       return;
     }
 
-    alert('Registration successful');
+    alert('Registration successful! Please login with your credentials.');
+    this.router.navigate(['/login']);
   }
 }

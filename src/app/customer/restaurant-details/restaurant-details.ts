@@ -23,6 +23,7 @@ export class RestaurantDetails implements OnInit {
 
   // Reservation Form State
   bookingDate: string = '';
+  minDate: string = '';
   bookingTime: string = '19:30';
   guestsCount: number = 2;
   specialRequests: string = '';
@@ -59,6 +60,7 @@ export class RestaurantDetails implements OnInit {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     this.bookingDate = `${yyyy}-${mm}-${dd}`;
+    this.minDate = this.bookingDate;
 
     const idParam = this.route.snapshot.paramMap.get('id');
     const restaurantId = idParam ? Number(idParam) : 1;
@@ -114,6 +116,11 @@ export class RestaurantDetails implements OnInit {
 
     if (!this.bookingDate) {
       this.errorMessage = 'Please choose a reservation date.';
+      return;
+    }
+
+    if (this.bookingDate < this.minDate) {
+      this.errorMessage = 'Reservation date cannot be in the past.';
       return;
     }
 

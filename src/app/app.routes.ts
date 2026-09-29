@@ -22,6 +22,11 @@ export const routes: Routes = [
     component: Register
   },
   {
+    path: 'customer',
+    redirectTo: 'customer/dashboard',
+    pathMatch: 'full'
+  },
+  {
     path: 'customer/dashboard',
     component: Dashboard
   },
