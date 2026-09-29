@@ -1,0 +1,253 @@
+<div class="page-container">
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand" routerLink="/customer/dashboard">
+        <span class="brand-icon">🍽️</span>
+        <span class="brand-title">Restaurant Reservation</span>
+      </div>
+
+      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links" [class.open]="isMobileMenuOpen">
+        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-item active" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-item" routerLink="/customer/reservations">My Reservations</a>
+        <button class="logout-btn" (click)="logout()">
+          <span>Logout</span>
+          <span class="logout-icon">🚪</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content" *ngIf="restaurant; else notFound">
+
+    <!-- Back Button -->
+    <div class="back-nav">
+      <a routerLink="/customer/restaurants" class="back-link">← Back to All Restaurants</a>
+    </div>
+
+    <!-- Restaurant Hero Header -->
+    <section class="restaurant-hero">
+      <div class="hero-main">
+        <div class="title-row">
+          <h1>{{ restaurant.name }}</h1>
+          <div class="rating-badge">
+            <span>⭐</span>
+            <strong>{{ restaurant.rating.toFixed(1) }}</strong>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="location-badge">📍 {{ restaurant.location }}</span>
+          <span class="cuisine-badge">🍲 {{ restaurant.cuisine }}</span>
+        </div>
+        <p class="description">{{ restaurant.description }}</p>
+      </div>
+    </section>
+
+    <!-- Error / Alert Message -->
+    <div *ngIf="errorMessage" class="error-banner">
+      <span>⚠️ {{ errorMessage }}</span>
+      <button class="close-banner" (click)="errorMessage = ''">✕</button>
+    </div>
+
+    <!-- Booking Flow Split Grid -->
+    <div class="booking-grid">
+
+      <!-- Step 1: Table Layout / Selection -->
+      <section class="tables-section">
+        <div class="section-title-wrap">
+          <h2>1. Select Available Table</h2>
+          <span class="hint-text">Click on an available table to book it</span>
+        </div>
+
+        <div class="table-legend">
+          <span class="legend-item"><span class="legend-dot free"></span> Available</span>
+          <span class="legend-item"><span class="legend-dot busy"></span> Occupied (Cannot Select)</span>
+          <span class="legend-item"><span class="legend-dot selected"></span> Selected</span>
+        </div>
+
+        <div class="tables-layout">
+          <div
+            *ngFor="let t of tables"
+            class="table-card"
+            [class.available]="t.available"
+            [class.occupied]="!t.available"
+            [class.selected]="selectedTable?.id === t.id"
+            (click)="selectTable(t)"
+          >
+            <div class="table-top">
+              <span class="table-id">{{ t.tableNumber }}</span>
+              <span class="status-pill" [class.pill-free]="t.available" [class.pill-busy]="!t.available">
+                {{ t.available ? 'Free' : 'Booked' }}
+              </span>
+            </div>
+
+            <div class="table-details">
+              <span>👥 Max {{ t.capacity }} Guests</span>
+              <span>🌿 {{ t.seatingType }} Zone</span>
+            </div>
+
+            <div class="table-action-hint">
+              <span *ngIf="t.available && selectedTable?.id !== t.id">Click to Select</span>
+              <span *ngIf="selectedTable?.id === t.id" class="selected-text">✓ Selected</span>
+              <span *ngIf="!t.available" class="booked-text">Unavailable</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Reservation Form -->
+      <section class="reservation-form-section">
+        <div class="section-title-wrap">
+          <h2>2. Reservation Details</h2>
+          <span class="hint-text">Confirm your party and time slot</span>
+        </div>
+
+        <form (ngSubmit)="submitReservation()" class="booking-form">
+
+          <!-- Selected Restaurant (Readonly) -->
+          <div class="form-group">
+            <label>Selected Restaurant</label>
+            <input type="text" [value]="restaurant.name" readonly class="form-control readonly" />
+          </div>
+
+          <!-- Selected Table Info -->
+          <div class="form-group">
+            <label>Selected Table</label>
+            <div *ngIf="selectedTable; else noTableSelected" class="selected-table-preview">
+              <span class="preview-number">Table {{ selectedTable.tableNumber }}</span>
+              <span class="preview-meta">({{ selectedTable.capacity }} Seats, {{ selectedTable.seatingType }})</span>
+            </div>
+            <ng-template #noTableSelected>
+              <div class="table-prompt-box">
+                👉 Please click on an available table from the left layout.
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label for="bookingDate">Date</label>
+            <input
+              type="date"
+              id="bookingDate"
+              name="bookingDate"
+              [(ngModel)]="bookingDate"
+              required
+              class="form-control"
+            />
+          </div>
+
+          <!-- Time Slot -->
+          <div class="form-group">
+            <label for="bookingTime">Dining Time</label>
+            <select
+              id="bookingTime"
+              name="bookingTime"
+              [(ngModel)]="bookingTime"
+              required
+              class="form-control"
+            >
+              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+            </select>
+          </div>
+
+          <!-- Number of Guests -->
+          <div class="form-group">
+            <label for="guestsCount">
+              Number of Guests
+              <small *ngIf="selectedTable">(Max: {{ selectedTable.capacity }})</small>
+            </label>
+            <input
+              type="number"
+              id="guestsCount"
+              name="guestsCount"
+              [(ngModel)]="guestsCount"
+              min="1"
+              [max]="selectedTable ? selectedTable.capacity : 10"
+              required
+              class="form-control"
+            />
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="btn btn-confirm"
+            [disabled]="!selectedTable"
+          >
+            {{ selectedTable ? 'Confirm & Book Table' : 'Select a Table Above First' }}
+          </button>
+
+        </form>
+      </section>
+
+    </div>
+
+  </main>
+
+  <ng-template #notFound>
+    <div class="not-found-container">
+      <h2>Restaurant Not Found</h2>
+      <p>The requested restaurant could not be located.</p>
+      <a routerLink="/customer/restaurants" class="btn btn-primary">Return to Restaurants</a>
+    </div>
+  </ng-template>
+
+  <!-- Reservation Confirmation Modal -->
+  <div *ngIf="bookingSuccess && createdReservation" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-success-header">
+        <span class="success-icon">🎉</span>
+        <h3>Reservation Confirmed!</h3>
+        <p>Your table has been reserved successfully.</p>
+      </div>
+
+      <div class="receipt-box">
+        <div class="receipt-row">
+          <span>Booking ID:</span>
+          <strong>#RES-{{ createdReservation.id }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Restaurant:</span>
+          <strong>{{ restaurant?.name }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Table:</span>
+          <strong>{{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Date & Time:</span>
+          <strong>{{ createdReservation.date }} at {{ createdReservation.time }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Guests:</span>
+          <strong>{{ createdReservation.guests }} Guests</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Status:</span>
+          <span class="status-confirmed">{{ createdReservation.status }}</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="bookAnother()">Book Another</button>
+        <button class="btn btn-primary" (click)="goToMyReservations()">View My Reservations</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  </footer>
+
+</div>

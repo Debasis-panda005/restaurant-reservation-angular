@@ -1,0 +1,172 @@
+<div class="page-container">
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand" routerLink="/customer/dashboard">
+        <span class="brand-icon">🍽️</span>
+        <span class="brand-title">Restaurant Reservation</span>
+      </div>
+
+      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links" [class.open]="isMobileMenuOpen">
+        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-item" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-item active" routerLink="/customer/reservations">My Reservations</a>
+        <button class="logout-btn" (click)="logout()">
+          <span>Logout</span>
+          <span class="logout-icon">🚪</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="notificationMessage" class="notification-banner">
+    <span>ℹ️ {{ notificationMessage }}</span>
+    <button class="close-banner" (click)="notificationMessage = ''">✕</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-info">
+        <span class="badge">Dining History</span>
+        <h1>My Table Reservations</h1>
+        <p class="subtitle">
+          View details of your active and past reservations, or cancel upcoming bookings.
+        </p>
+      </div>
+
+      <div class="header-action">
+        <a routerLink="/customer/restaurants" class="btn btn-primary">
+          + Book New Table
+        </a>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeFilter === 'ALL'"
+        (click)="setFilter('ALL')"
+      >
+        All ({{ reservations.length }})
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeFilter === 'CONFIRMED'"
+        (click)="setFilter('CONFIRMED')"
+      >
+        Confirmed
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeFilter === 'PENDING'"
+        (click)="setFilter('PENDING')"
+      >
+        Pending
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeFilter === 'CANCELLED'"
+        (click)="setFilter('CANCELLED')"
+      >
+        Cancelled
+      </button>
+    </div>
+
+    <!-- Reservations List -->
+    <div *ngIf="filteredReservations.length > 0; else noReservations" class="reservations-list">
+      <div *ngFor="let res of filteredReservations" class="reservation-card" [class.is-cancelled]="res.status === 'CANCELLED'">
+
+        <div class="card-main">
+          <!-- Top Row: Restaurant Name & Status -->
+          <div class="card-header">
+            <div class="res-title-wrap">
+              <span class="booking-id">#RES-{{ res.id }}</span>
+              <h2 class="res-restaurant-name">{{ res.restaurantName }}</h2>
+              <span *ngIf="res.restaurantLocation" class="res-location">📍 {{ res.restaurantLocation }}</span>
+            </div>
+
+            <div class="status-wrap">
+              <span
+                class="status-pill"
+                [class.confirmed]="res.status === 'CONFIRMED'"
+                [class.pending]="res.status === 'PENDING'"
+                [class.cancelled]="res.status === 'CANCELLED'"
+              >
+                {{ res.status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Middle Row: Booking Details Grid -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">📅 Date</span>
+              <strong class="detail-val">{{ res.date }}</strong>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">🕒 Time</span>
+              <strong class="detail-val">{{ res.time }}</strong>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">👥 Party Size</span>
+              <strong class="detail-val">{{ res.guests }} Guests</strong>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">🪑 Table</span>
+              <strong class="detail-val">{{ res.tableNumber }} ({{ res.seatingType }})</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Section: Cancel Option -->
+        <div class="card-actions">
+          <button
+            *ngIf="res.status === 'CONFIRMED' || res.status === 'PENDING'"
+            class="btn btn-cancel"
+            (click)="cancelBooking(res)"
+          >
+            Cancel Booking
+          </button>
+          <span *ngIf="res.status === 'CANCELLED'" class="cancelled-tag">
+            Booking Cancelled
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <ng-template #noReservations>
+      <div class="empty-state-card">
+        <span class="empty-icon">📅</span>
+        <h3>No reservations found</h3>
+        <p>You have no reservations matching the "{{ activeFilter }}" filter.</p>
+        <a routerLink="/customer/restaurants" class="btn btn-primary">
+          Explore Restaurants & Book a Table
+        </a>
+      </div>
+    </ng-template>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  </footer>
+
+</div>

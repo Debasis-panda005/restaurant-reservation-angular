@@ -1,0 +1,126 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { ReservationService } from '../../core/services/reservation.service';
+import { RestaurantService } from '../../core/services/restaurant.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Reservation } from '../../core/models/reservation.model';
+import { Restaurant } from '../../core/models/restaurant.model';
+import { Table } from '../../core/models/table.model';
+
+export interface EnrichedReservation extends Reservation {
+  restaurantName?: string;
+  restaurantLocation?: string;
+  tableNumber?: string;
+  seatingType?: string;
+}
+
+@Component({
+  selector: 'app-my-reservations',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './my-reservations.html',
+  styleUrl: './my-reservations.css',
+})
+export class MyReservations implements OnInit {
+  reservations: EnrichedReservation[] = [];
+  filteredReservations: EnrichedReservation[] = [];
+  activeFilter: string = 'ALL';
+  notificationMessage: string = '';
+  isMobileMenuOpen: boolean = false;
+
+  private restaurantsMap = new Map<number, Restaurant>();
+  private tablesMap = new Map<number, Table>();
+
+  constructor(
+    private reservationService: ReservationService,
+    private restaurantService: RestaurantService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    // First cache restaurants and tables
+    this.restaurantService.getRestaurants().subscribe({
+      next: (restaurants) => {
+        restaurants.forEach((r) => this.restaurantsMap.set(r.id, r));
+
+        // Load tables for each restaurant
+        restaurants.forEach((r) => {
+          this.restaurantService.getTablesByRestaurantId(r.id).subscribe((tables) => {
+            tables.forEach((t) => this.tablesMap.set(t.id, t));
+          });
+        });
+
+        // Now load customer reservations
+        this.loadCustomerReservations();
+      },
+    });
+  }
+
+  loadCustomerReservations(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+
+    this.reservationService.getReservationsByCustomerId(customerId).subscribe({
+      next: (data) => {
+        this.reservations = data.map((res) => {
+          const restaurant = this.restaurantsMap.get(res.restaurantId);
+          const table = this.tablesMap.get(res.tableId);
+          return {
+            ...res,
+            restaurantName: restaurant ? restaurant.name : `Restaurant #${res.restaurantId}`,
+            restaurantLocation: restaurant ? restaurant.location : '',
+            tableNumber: table ? table.tableNumber : `Table #${res.tableId}`,
+            seatingType: table ? table.seatingType : 'STANDARD',
+          };
+        });
+
+        this.applyFilter();
+      },
+    });
+  }
+
+  applyFilter(): void {
+    if (this.activeFilter === 'ALL') {
+      this.filteredReservations = [...this.reservations];
+    } else {
+      this.filteredReservations = this.reservations.filter(
+        (r) => r.status === this.activeFilter
+      );
+    }
+  }
+
+  setFilter(filter: string): void {
+    this.activeFilter = filter;
+    this.applyFilter();
+  }
+
+  cancelBooking(reservation: EnrichedReservation): void {
+    if (confirm(`Are you sure you want to cancel reservation #RES-${reservation.id} at ${reservation.restaurantName}?`)) {
+      this.reservationService.cancelReservation(reservation.id).subscribe({
+        next: (success) => {
+          if (success) {
+            reservation.status = 'CANCELLED';
+            this.notificationMessage = `Reservation #RES-${reservation.id} was successfully cancelled.`;
+            this.applyFilter();
+            setTimeout(() => (this.notificationMessage = ''), 5000);
+          }
+        },
+      });
+    }
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}

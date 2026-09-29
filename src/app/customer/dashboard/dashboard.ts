@@ -164,11 +164,15 @@ export class Dashboard implements OnInit {
   }
 
   onReserveClick(restaurant: Restaurant): void {
-    this.feedbackMessage = `Table reservation for "${restaurant.name}" selected! Full reservation booking wizard is in development for Phase 5.`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      this.feedbackMessage = '';
-    }, 5000);
+    this.router.navigate(['/customer/restaurants', restaurant.id]);
+  }
+
+  goToRestaurants(): void {
+    this.router.navigate(['/customer/restaurants']);
+  }
+
+  goToMyReservations(): void {
+    this.router.navigate(['/customer/reservations']);
   }
 
   toggleMobileMenu(): void {

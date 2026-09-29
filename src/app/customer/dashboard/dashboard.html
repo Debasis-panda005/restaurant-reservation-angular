@@ -16,9 +16,8 @@
 
       <nav class="nav-links" [class.open]="isMobileMenuOpen">
         <a class="nav-item active" (click)="scrollToSection('welcome-section')">Dashboard</a>
-        <a class="nav-item" (click)="scrollToSection('summary-section')">Overview</a>
-        <a class="nav-item" (click)="scrollToSection('restaurants-section')">Restaurants</a>
-        <a class="nav-item" (click)="scrollToSection('summary-section')">My Reservations</a>
+        <a class="nav-item" (click)="goToRestaurants()">Restaurants</a>
+        <a class="nav-item" (click)="goToMyReservations()">My Reservations</a>
         <a class="nav-item" (click)="scrollToSection('summary-section')">Queue Status</a>
         <button class="logout-btn" (click)="logout()">
           <span>Logout</span>
@@ -46,11 +45,11 @@
           or track your live queue status without waiting in physical lines.
         </p>
         <div class="hero-actions">
-          <button class="btn btn-primary" (click)="scrollToSection('restaurants-section')">
+          <button class="btn btn-primary" (click)="goToRestaurants()">
             🔍 Browse Restaurants
           </button>
-          <button class="btn btn-outline" (click)="scrollToSection('summary-section')">
-            📋 View My Status
+          <button class="btn btn-outline" (click)="goToMyReservations()">
+            📋 My Reservations
           </button>
         </div>
       </div>

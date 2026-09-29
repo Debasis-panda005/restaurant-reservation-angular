@@ -1,0 +1,63 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { MyReservations, EnrichedReservation } from './my-reservations';
+import { ReservationService } from '../../core/services/reservation.service';
+import { RestaurantService } from '../../core/services/restaurant.service';
+
+describe('MyReservations', () => {
+  let component: MyReservations;
+  let fixture: ComponentFixture<MyReservations>;
+  let reservationService: ReservationService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MyReservations],
+      providers: [provideRouter([]), ReservationService, RestaurantService],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(MyReservations);
+    component = fixture.componentInstance;
+    reservationService = TestBed.inject(ReservationService);
+    fixture.detectChanges();
+  });
+
+  it('should create the component', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('should load reservations for the customer', () => {
+    expect(component.reservations.length).toBeGreaterThan(0);
+    expect(component.filteredReservations.length).toBeGreaterThan(0);
+  });
+
+  it('should filter reservations by status', () => {
+    component.setFilter('CONFIRMED');
+    expect(component.activeFilter).toBe('CONFIRMED');
+    const allConfirmed = component.filteredReservations.every(
+      (r) => r.status === 'CONFIRMED'
+    );
+    expect(allConfirmed).toBe(true);
+  });
+
+  it('should cancel a reservation and update status', () => {
+    const reservationToCancel: EnrichedReservation = {
+      id: 1001,
+      customerId: 1,
+      restaurantId: 1,
+      tableId: 102,
+      date: '2026-09-30',
+      time: '19:30',
+      guests: 4,
+      status: 'CONFIRMED',
+      restaurantName: 'Spice Symphony Bistro',
+    };
+
+    // Mock confirm dialog
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    component.cancelBooking(reservationToCancel);
+
+    expect(reservationToCancel.status).toBe('CANCELLED');
+    expect(component.notificationMessage).toContain('successfully cancelled');
+  });
+});
