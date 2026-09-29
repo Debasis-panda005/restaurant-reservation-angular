@@ -18,7 +18,7 @@
         <a class="nav-item active" (click)="scrollToSection('welcome-section')">Dashboard</a>
         <a class="nav-item" (click)="goToRestaurants()">Restaurants</a>
         <a class="nav-item" (click)="goToMyReservations()">My Reservations</a>
-        <a class="nav-item" (click)="scrollToSection('summary-section')">Queue Status</a>
+        <a class="nav-item" (click)="goToQueue()">Queue Status</a>
         <button class="logout-btn" (click)="logout()">
           <span>Logout</span>
           <span class="logout-icon">🚪</span>
@@ -119,11 +119,17 @@
               <span>👥 <strong>{{ currentQueueTicket.peopleAhead }}</strong> parties ahead</span>
               <span>⏳ ~<strong>{{ currentQueueTicket.estimatedWaitMinutes }} mins</strong> wait</span>
             </div>
+            <button class="btn btn-secondary" style="margin-top: 0.75rem; width: 100%;" (click)="goToQueue()">
+              View Queue Tracker →
+            </button>
           </div>
           <ng-template #noQueue>
             <div class="summary-value inactive">None</div>
             <div class="summary-label">Current Queue Status</div>
             <p class="summary-hint">You are not currently in any waiting line.</p>
+            <button class="btn btn-secondary" style="margin-top: 0.75rem; width: 100%;" (click)="goToQueue()">
+              Join Waitlist / Tracker →
+            </button>
           </ng-template>
         </div>
 

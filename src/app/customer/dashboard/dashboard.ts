@@ -175,6 +175,10 @@ export class Dashboard implements OnInit {
     this.router.navigate(['/customer/reservations']);
   }
 
+  goToQueue(): void {
+    this.router.navigate(['/customer/queue']);
+  }
+
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }

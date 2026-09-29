@@ -1,0 +1,260 @@
+<div class="page-container">
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand" routerLink="/customer/dashboard">
+        <span class="brand-icon">🍽️</span>
+        <span class="brand-title">Restaurant Reservation</span>
+      </div>
+
+      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links" [class.open]="isMobileMenuOpen">
+        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-item" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-item" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-item active" routerLink="/customer/queue">Queue Status</a>
+        <button class="logout-btn" (click)="logout()">
+          <span>Logout</span>
+          <span class="logout-icon">🚪</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="notificationMessage" class="notification-banner">
+    <span>{{ notificationMessage }}</span>
+    <button class="close-banner" (click)="notificationMessage = ''">✕</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-info">
+        <span class="badge">Live Waiting Line</span>
+        <h1>Digital Queue Tracker</h1>
+        <p class="subtitle">
+          Monitor your real-time position in line without standing at the restaurant entrance.
+        </p>
+      </div>
+
+      <!-- Refresh Action -->
+      <div class="header-action">
+        <button
+          class="btn btn-secondary"
+          (click)="refreshStatus()"
+          [disabled]="isRefreshing"
+        >
+          <span class="refresh-icon" [class.spin]="isRefreshing">🔄</span>
+          <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh Status' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Queue Ticket Display -->
+    <div *ngIf="currentTicket; else noActiveTicket" class="queue-card-wrap">
+
+      <div class="queue-main-card">
+
+        <!-- Top Card Row: Token and Status Badge -->
+        <div class="ticket-header">
+          <div class="ticket-id-wrap">
+            <span class="ticket-tag">Your Waitlist Token</span>
+            <div class="ticket-number">{{ currentTicket.ticketNumber }}</div>
+          </div>
+
+          <div class="status-wrap">
+            <span
+              class="status-pill"
+              [class.status-waiting]="currentTicket.status === 'WAITING'"
+              [class.status-serving]="currentTicket.status === 'SERVING'"
+              [class.status-completed]="currentTicket.status === 'COMPLETED'"
+            >
+              ● {{ currentTicket.status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Restaurant Banner -->
+        <div class="venue-info" *ngIf="restaurant">
+          <span class="venue-icon">🏪</span>
+          <div>
+            <h3 class="venue-name">{{ restaurant.name }}</h3>
+            <span class="venue-loc">📍 {{ restaurant.location }} • 🍲 {{ restaurant.cuisine }}</span>
+          </div>
+        </div>
+
+        <!-- 5. Visual Queue Progress Indicator -->
+        <div class="progress-section">
+          <div class="progress-header">
+            <span class="progress-title">Queue Progress</span>
+            <span class="progress-pct">{{ progressPercentage }}%</span>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="progressPercentage"></div>
+          </div>
+
+          <div class="progress-steps">
+            <div class="step-point completed">
+              <span class="step-dot">1</span>
+              <span class="step-name">Ticket Issued</span>
+            </div>
+            <div
+              class="step-point"
+              [class.active]="currentTicket.status === 'WAITING'"
+              [class.completed]="currentTicket.status === 'SERVING' || currentTicket.status === 'COMPLETED'"
+            >
+              <span class="step-dot">2</span>
+              <span class="step-name">In Waitlist</span>
+            </div>
+            <div
+              class="step-point"
+              [class.active]="currentTicket.status === 'SERVING'"
+              [class.completed]="currentTicket.status === 'COMPLETED'"
+            >
+              <span class="step-dot">3</span>
+              <span class="step-name">Table Ready</span>
+            </div>
+            <div
+              class="step-point"
+              [class.completed]="currentTicket.status === 'COMPLETED'"
+            >
+              <span class="step-dot">4</span>
+              <span class="step-name">Seated</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Highlights Grid -->
+        <div class="metrics-grid">
+
+          <div class="metric-box">
+            <span class="metric-icon">👥</span>
+            <div class="metric-val">{{ currentTicket.peopleAhead }}</div>
+            <div class="metric-label">Parties Ahead</div>
+            <small class="metric-hint">Groups waiting before you</small>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">⏳</span>
+            <div class="metric-val">
+              {{ currentTicket.status === 'SERVING' ? '0 min' : '~' + currentTicket.estimatedWaitMinutes + ' min' }}
+            </div>
+            <div class="metric-label">Estimated Wait</div>
+            <small class="metric-hint">Based on current turnover</small>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">🎯</span>
+            <div class="metric-val">#{{ queuePosition }}</div>
+            <div class="metric-label">Queue Position</div>
+            <small class="metric-hint">Current place in line</small>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">🪑</span>
+            <div class="metric-val">{{ currentTicket.guests }}</div>
+            <div class="metric-label">Party Guests</div>
+            <small class="metric-hint">Requested seats</small>
+          </div>
+
+        </div>
+
+        <!-- Serving Alert Box if Ready -->
+        <div *ngIf="currentTicket.status === 'SERVING'" class="serving-alert">
+          <span class="serving-bell">🔔</span>
+          <div>
+            <strong>Your table is ready!</strong>
+            <p>Please approach the restaurant greeting counter with token <strong>{{ currentTicket.ticketNumber }}</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="queue-actions">
+          <button class="btn btn-secondary" (click)="refreshStatus()">
+            🔄 Refresh Status
+          </button>
+          <button class="btn btn-leave" (click)="leaveQueue()">
+            🚫 Leave Queue
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- No Active Ticket State: Quick Join Form -->
+    <ng-template #noActiveTicket>
+      <div class="no-ticket-card">
+        <span class="empty-icon">⏱️</span>
+        <h2>No Active Queue Ticket</h2>
+        <p class="empty-sub">
+          You are not currently waiting in any digital queue. Join a line below or reserve a table in advance!
+        </p>
+
+        <!-- Quick Join Waitlist Form -->
+        <div class="join-box">
+          <h3>Join Restaurant Waitlist</h3>
+
+          <form (ngSubmit)="joinNewQueue()" class="join-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="selectRestaurant">Select Restaurant</label>
+                <select
+                  id="selectRestaurant"
+                  name="selectRestaurant"
+                  [(ngModel)]="selectedRestaurantId"
+                  class="form-control"
+                >
+                  <option *ngFor="let r of restaurants" [value]="r.id">
+                    {{ r.name }} ({{ r.location }})
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="joinGuests">Party Size (Guests)</label>
+                <input
+                  type="number"
+                  id="joinGuests"
+                  name="joinGuests"
+                  [(ngModel)]="joinGuestsCount"
+                  min="1"
+                  max="12"
+                  required
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                🎟️ Join Waiting Queue
+              </button>
+              <a routerLink="/customer/restaurants" class="btn btn-secondary">
+                Or Reserve Table in Advance
+              </a>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </ng-template>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  </footer>
+
+</div>

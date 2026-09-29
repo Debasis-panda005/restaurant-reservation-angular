@@ -6,5 +6,5 @@ export interface QueueTicket {
   guests: number;
   peopleAhead: number;
   estimatedWaitMinutes: number;
-  status: 'WAITING' | 'CALLED' | 'SEATED' | 'CANCELLED';
+  status: 'WAITING' | 'SERVING' | 'COMPLETED' | 'CALLED' | 'SEATED' | 'CANCELLED';
 }

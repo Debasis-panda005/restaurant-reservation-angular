@@ -24,9 +24,35 @@ export class QueueService {
    */
   getQueueStatus(customerId: number): Observable<QueueTicket | undefined> {
     const activeTicket = this.queueTickets.find(
-      q => q.customerId === customerId && q.status === 'WAITING'
+      q => q.customerId === customerId && (q.status === 'WAITING' || q.status === 'SERVING')
     );
     return of(activeTicket);
+  }
+
+  /**
+   * Simulate queue progression on refresh.
+   */
+  advanceQueue(customerId: number): Observable<QueueTicket | undefined> {
+    const ticket = this.queueTickets.find(
+      q => q.customerId === customerId && (q.status === 'WAITING' || q.status === 'SERVING')
+    );
+    if (ticket) {
+      if (ticket.status === 'WAITING') {
+        if (ticket.peopleAhead > 1) {
+          ticket.peopleAhead -= 1;
+          ticket.estimatedWaitMinutes = Math.max(3, ticket.peopleAhead * 5 + 3);
+        } else if (ticket.peopleAhead === 1) {
+          ticket.peopleAhead = 0;
+          ticket.estimatedWaitMinutes = 2;
+        } else if (ticket.peopleAhead === 0) {
+          ticket.status = 'SERVING';
+          ticket.estimatedWaitMinutes = 0;
+        }
+      } else if (ticket.status === 'SERVING') {
+        ticket.status = 'COMPLETED';
+      }
+    }
+    return of(ticket);
   }
 
   /**
