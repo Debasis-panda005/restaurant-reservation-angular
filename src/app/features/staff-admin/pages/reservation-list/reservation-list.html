@@ -1,0 +1,54 @@
+<div class="reservations-container">
+  <header class="reservations-header">
+    <h1 class="reservations-title">Reservation Management</h1>
+  </header>
+
+  <div class="table-wrapper">
+    <table class="reservations-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Customer</th>
+          <th>Table</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Guests</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (res of reservations; track res.id) {
+          <tr>
+            <td class="res-id">{{ res.id }}</td>
+            <td class="customer-name">{{ res.customerName }}</td>
+            <td><span class="table-badge">{{ res.tableNumber }}</span></td>
+            <td>{{ res.date }}</td>
+            <td>{{ res.time }}</td>
+            <td>{{ res.guests }}</td>
+            <td>
+              <span
+                class="status-badge"
+                [class.status-pending]="res.status === 'Pending'"
+                [class.status-confirmed]="res.status === 'Confirmed'"
+                [class.status-rejected]="res.status === 'Rejected'"
+                [class.status-completed]="res.status === 'Completed'"
+              >
+                {{ res.status }}
+              </span>
+            </td>
+            <td>
+              <a
+                [routerLink]="['/staff/reservations', res.id]"
+                class="btn-details"
+                style="text-decoration: none; display: inline-block;"
+              >
+                View Details
+              </a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

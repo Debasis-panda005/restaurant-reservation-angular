@@ -1,0 +1,47 @@
+<div class="staff-container">
+  <header class="staff-header">
+    <div class="brand">
+      <span class="brand-title">Restaurant Management</span>
+      <span class="portal-badge">Staff & Admin</span>
+    </div>
+  </header>
+
+  <div class="staff-body">
+    <aside class="staff-sidebar">
+      <nav class="staff-nav">
+        <a
+          routerLink="/staff/dashboard"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          Dashboard
+        </a>
+        <a
+          routerLink="/staff/tables"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          Tables
+        </a>
+        <a
+          routerLink="/staff/reservations"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          Reservations
+        </a>
+        <a
+          routerLink="/staff/queue"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          Queue
+        </a>
+      </nav>
+    </aside>
+
+    <main class="staff-main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

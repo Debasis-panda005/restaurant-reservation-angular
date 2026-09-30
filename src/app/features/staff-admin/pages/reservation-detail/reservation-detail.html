@@ -1,0 +1,107 @@
+<div class="detail-container">
+  <div class="top-nav">
+    <a routerLink="/staff/reservations" class="back-link">
+      &larr; Back to Reservations
+    </a>
+  </div>
+
+  <header class="detail-header">
+    <div class="header-info">
+      <h1 class="page-title">Reservation Details</h1>
+      <span class="reservation-id">ID: {{ reservation.id }}</span>
+    </div>
+    <span
+      class="status-badge"
+      [class.status-pending]="reservation.status === 'Pending'"
+      [class.status-confirmed]="reservation.status === 'Confirmed'"
+      [class.status-rejected]="reservation.status === 'Rejected'"
+      [class.status-completed]="reservation.status === 'Completed'"
+    >
+      {{ reservation.status }}
+    </span>
+  </header>
+
+  <div class="detail-card">
+    <div class="card-section">
+      <h2 class="section-title">Customer Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Customer Name</span>
+          <span class="value">{{ reservation.customerName }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Email Address</span>
+          <span class="value">{{ reservation.customerEmail }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Phone Number</span>
+          <span class="value">{{ reservation.customerPhone }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card-section">
+      <h2 class="section-title">Reservation Details</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Assigned Table</span>
+          <span class="value highlight-table">{{ reservation.tableNumber }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Reservation Date</span>
+          <span class="value">{{ reservation.date }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Reservation Time</span>
+          <span class="value">{{ reservation.time }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Number of Guests</span>
+          <span class="value">{{ reservation.guests }} guests</span>
+        </div>
+        @if (reservation.specialRequests) {
+          <div class="info-item full-width">
+            <span class="label">Special Requests</span>
+            <span class="value">{{ reservation.specialRequests }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (reservation.status === 'Pending' || reservation.status === 'Confirmed') {
+      <div class="divider"></div>
+
+      <div class="card-section actions-section">
+        <h2 class="section-title">Actions</h2>
+        <div class="actions-group">
+          @if (reservation.status === 'Pending') {
+            <button
+              type="button"
+              class="btn btn-confirm"
+              (click)="confirmReservation()"
+            >
+              Confirm Reservation
+            </button>
+            <button
+              type="button"
+              class="btn btn-reject"
+              (click)="rejectReservation()"
+            >
+              Reject Reservation
+            </button>
+          } @else if (reservation.status === 'Confirmed') {
+            <button
+              type="button"
+              class="btn btn-complete"
+              (click)="completeReservation()"
+            >
+              Complete Reservation
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

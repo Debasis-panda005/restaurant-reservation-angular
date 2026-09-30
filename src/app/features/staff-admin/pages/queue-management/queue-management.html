@@ -1,0 +1,109 @@
+<div class="queue-container">
+  <header class="queue-header">
+    <h1 class="queue-title">Queue Management</h1>
+    <p class="queue-description">
+      Manage the current customer queue and table assignment.
+    </p>
+  </header>
+
+  <div class="table-wrapper">
+    <table class="queue-table">
+      <thead>
+        <tr>
+          <th>Queue No.</th>
+          <th>Customer</th>
+          <th>Guests</th>
+          <th>Joined Time</th>
+          <th>Position</th>
+          <th>Status</th>
+          <th>Assigned Table</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of queueList; track item.queueNo) {
+          <tr>
+            <td class="queue-no">{{ item.queueNo }}</td>
+            <td class="customer-name">{{ item.customerName }}</td>
+            <td>{{ item.guests }}</td>
+            <td>{{ item.joinedTime }}</td>
+            <td>#{{ item.position }}</td>
+            <td>
+              <span
+                class="status-badge"
+                [class.status-waiting]="item.status === 'Waiting'"
+                [class.status-called]="item.status === 'Called'"
+                [class.status-seated]="item.status === 'Seated'"
+                [class.status-completed]="item.status === 'Completed'"
+                [class.status-cancelled]="item.status === 'Cancelled'"
+              >
+                {{ item.status }}
+              </span>
+            </td>
+            <td>
+              <span class="table-badge">{{ item.assignedTable || '—' }}</span>
+            </td>
+            <td>
+              <div class="actions-group">
+                @if (item.status === 'Waiting') {
+                  <button
+                    type="button"
+                    class="btn btn-call"
+                    (click)="callCustomer(item)"
+                  >
+                    Call
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-cancel"
+                    (click)="cancelQueue(item)"
+                  >
+                    Cancel
+                  </button>
+                } @else if (item.status === 'Called') {
+                  <button
+                    type="button"
+                    class="btn btn-assign"
+                    (click)="assignTable(item)"
+                  >
+                    Assign Table
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-cancel"
+                    (click)="cancelQueue(item)"
+                  >
+                    Cancel
+                  </button>
+                } @else if (item.status === 'Seated') {
+                  <button
+                    type="button"
+                    class="btn btn-complete"
+                    (click)="completeQueue(item)"
+                  >
+                    Complete
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-cancel"
+                    (click)="cancelQueue(item)"
+                  >
+                    Cancel
+                  </button>
+                } @else {
+                  <span class="no-actions">—</span>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="empty-state">
+              No customers are currently waiting.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

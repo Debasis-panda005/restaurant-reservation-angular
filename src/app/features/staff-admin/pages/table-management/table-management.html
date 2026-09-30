@@ -1,0 +1,29 @@
+<div class="tables-container">
+  <header class="tables-header">
+    <h1 class="tables-title">Table Management</h1>
+  </header>
+
+  <section class="tables-grid">
+    @for (table of tables; track table.id) {
+      <div class="table-card">
+        <div class="card-header">
+          <span class="table-number">{{ table.tableNumber }}</span>
+          <span
+            class="status-badge"
+            [class.status-available]="table.status === 'Available'"
+            [class.status-occupied]="table.status === 'Occupied'"
+            [class.status-reserved]="table.status === 'Reserved'"
+          >
+            {{ table.status }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="capacity-info">
+            <span class="capacity-label">Capacity:</span>
+            <span class="capacity-value">{{ table.capacity }} guests</span>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+</div>
