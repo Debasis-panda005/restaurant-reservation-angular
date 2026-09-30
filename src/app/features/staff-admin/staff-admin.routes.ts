@@ -3,6 +3,11 @@ import { StaffLayout } from './components/staff-layout/staff-layout';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/staff-login/staff-login').then((m) => m.StaffLogin),
+  },
+  {
     path: '',
     component: StaffLayout,
     children: [
