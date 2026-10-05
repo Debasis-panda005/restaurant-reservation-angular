@@ -5,4 +5,6 @@ export interface Restaurant {
   cuisine: string;
   description: string;
   rating: number;
+  imageUrl?: string;
+  tagline?: string;
 }

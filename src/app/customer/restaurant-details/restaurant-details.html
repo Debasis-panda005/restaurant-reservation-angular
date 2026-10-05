@@ -1,28 +1,40 @@
 <div class="page-container">
 
-  <!-- Top Navigation Bar -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-brand" routerLink="/customer/dashboard">
-        <span class="brand-icon">🍽️</span>
-        <span class="brand-title">Restaurant Reservation</span>
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
       </div>
 
-      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
       </button>
 
-      <nav class="nav-links" [class.open]="isMobileMenuOpen">
-        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
-        <a class="nav-item active" routerLink="/customer/restaurants">Restaurants</a>
-        <a class="nav-item" routerLink="/customer/reservations">My Reservations</a>
-        <a class="nav-item" routerLink="/customer/queue">Queue Status</a>
-        <button class="logout-btn" (click)="logout()">
-          <span>Logout</span>
-          <span class="logout-icon">🚪</span>
-        </button>
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury active" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -30,113 +42,164 @@
   <!-- Main Content -->
   <main class="main-content" *ngIf="restaurant; else notFound">
 
-    <!-- Back Button -->
-    <div class="back-nav">
-      <a routerLink="/customer/restaurants" class="back-link">← Back to All Restaurants</a>
+    <!-- Return Link -->
+    <div style="margin-bottom: 1.5rem;">
+      <a routerLink="/customer/restaurants" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.08em;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        <span>Return to Dining Directory</span>
+      </a>
     </div>
 
-    <!-- Restaurant Hero Header -->
-    <section class="restaurant-hero">
-      <div class="hero-main">
-        <div class="title-row">
-          <h1>{{ restaurant.name }}</h1>
-          <div class="rating-badge">
-            <span>⭐</span>
-            <strong>{{ restaurant.rating.toFixed(1) }}</strong>
+    <!-- Cinematic Restaurant Hero -->
+    <section class="venue-details-hero">
+      <div
+        class="venue-details-hero-bg"
+        [style.background-image]="'url(' + (restaurant.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80') + ')'"
+      ></div>
+      <div class="venue-details-hero-overlay"></div>
+
+      <div class="venue-details-hero-content">
+        <span class="eyebrow-pill" style="margin-bottom: 0.5rem;">
+          <span>✦</span>
+          <span>Fine Dining Destination</span>
+        </span>
+        <h1 class="venue-hero-name">{{ restaurant.name }}</h1>
+
+        <div class="venue-hero-meta-row">
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: var(--gold-light); font-size: 0.9rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>{{ restaurant.location }}</span>
+          </div>
+          <span style="color: var(--text-dark);">&bull;</span>
+          <div style="font-size: 0.88rem; color: var(--text-secondary);">
+            {{ restaurant.cuisine }}
+          </div>
+          <span style="color: var(--text-dark);">&bull;</span>
+          <div style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(201, 164, 92, 0.15); border: 1px solid var(--gold-primary); color: var(--gold-light); font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 2px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span>{{ restaurant.rating.toFixed(1) }}</span>
           </div>
         </div>
-        <div class="meta-row">
-          <span class="location-badge">📍 {{ restaurant.location }}</span>
-          <span class="cuisine-badge">🍲 {{ restaurant.cuisine }}</span>
-        </div>
-        <p class="description">{{ restaurant.description }}</p>
+
+        <p class="venue-hero-desc">{{ restaurant.description }}</p>
       </div>
     </section>
 
-    <!-- Error / Alert Message -->
-    <div *ngIf="errorMessage" class="error-banner">
-      <span>⚠️ {{ errorMessage }}</span>
-      <button class="close-banner" (click)="errorMessage = ''">✕</button>
+    <!-- Error / Alert Banner -->
+    <div *ngIf="errorMessage" class="luxury-alert-banner">
+      <div class="alert-content">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <button class="alert-close-btn" (click)="errorMessage = ''">✕</button>
     </div>
 
     <!-- Booking Flow Split Grid -->
-    <div class="booking-grid">
+    <div class="venue-booking-grid">
 
-      <!-- Step 1: Table Layout / Selection -->
-      <section class="tables-section">
-        <div class="section-title-wrap">
-          <h2>1. Select Available Table</h2>
-          <span class="hint-text">Click on an available table to book it</span>
+      <!-- Step 1: Available Tables Floor Plan -->
+      <section class="venue-seating-card">
+        <div class="venue-section-head">
+          <span class="eyebrow-pill" style="margin-bottom: 0.35rem;">STEP 01</span>
+          <h2>Select Available Table</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+            Select an available table from the floor configuration below.
+          </p>
         </div>
 
-        <div class="table-legend">
-          <span class="legend-item"><span class="legend-dot free"></span> Available</span>
-          <span class="legend-item"><span class="legend-dot busy"></span> Occupied (Cannot Select)</span>
-          <span class="legend-item"><span class="legend-dot selected"></span> Selected</span>
+        <!-- Legend -->
+        <div class="venue-seating-legend">
+          <div class="legend-chip">
+            <span class="legend-dot dot-avail"></span>
+            <span>Available</span>
+          </div>
+          <div class="legend-chip">
+            <span class="legend-dot dot-occ"></span>
+            <span>Occupied</span>
+          </div>
+          <div class="legend-chip">
+            <span class="legend-dot dot-sel"></span>
+            <span>Selected</span>
+          </div>
         </div>
 
-        <div class="tables-layout">
+        <!-- Tables Floor Grid -->
+        <div class="venue-tables-grid">
           <div
             *ngFor="let t of tables"
-            class="table-card"
-            [class.available]="t.available"
-            [class.occupied]="!t.available"
-            [class.selected]="selectedTable?.id === t.id"
+            class="venue-table-box"
+            [class.is-available]="t.available"
+            [class.is-occupied]="!t.available"
+            [class.is-selected]="selectedTable?.id === t.id"
             (click)="selectTable(t)"
           >
-            <div class="table-top">
-              <span class="table-id">{{ t.tableNumber }}</span>
-              <span class="status-pill" [class.pill-free]="t.available" [class.pill-busy]="!t.available">
-                {{ t.available ? 'Free' : 'Booked' }}
-              </span>
+            <div class="table-box-number">Table {{ t.tableNumber }}</div>
+            <div class="table-box-details">
+              <span>Capacity: <strong>{{ t.capacity }} Guests</strong></span>
+              <span>Zone: <strong>{{ t.seatingType }}</strong></span>
             </div>
-
-            <div class="table-details">
-              <span>👥 Max {{ t.capacity }} Guests</span>
-              <span>🌿 {{ t.seatingType }} Zone</span>
-            </div>
-
-            <div class="table-action-hint">
-              <span *ngIf="t.available && selectedTable?.id !== t.id">Click to Select</span>
-              <span *ngIf="selectedTable?.id === t.id" class="selected-text">✓ Selected</span>
-              <span *ngIf="!t.available" class="booked-text">Unavailable</span>
+            <div class="table-box-status">
+              <span *ngIf="t.available && selectedTable?.id !== t.id" class="status-free-text">Click to Select</span>
+              <span *ngIf="selectedTable?.id === t.id" class="status-sel-text">✓ Selected</span>
+              <span *ngIf="!t.available" class="status-busy-text">Unavailable</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Step 2: Reservation Form -->
-      <section class="reservation-form-section">
-        <div class="section-title-wrap">
-          <h2>2. Reservation Details</h2>
-          <span class="hint-text">Confirm your party and time slot</span>
+      <!-- Step 2: Reservation Particulars Form -->
+      <section class="venue-form-card">
+        <div class="venue-section-head">
+          <span class="eyebrow-pill" style="margin-bottom: 0.35rem;">STEP 02</span>
+          <h2>Reserve Your Table</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+            Complete your dining arrangements.
+          </p>
         </div>
 
-        <form (ngSubmit)="submitReservation()" class="booking-form">
+        <form (ngSubmit)="submitReservation()" class="venue-booking-form">
 
-          <!-- Selected Restaurant (Readonly) -->
-          <div class="form-group">
-            <label>Selected Restaurant</label>
-            <input type="text" [value]="restaurant.name" readonly class="form-control readonly" />
+          <!-- Selected Venue -->
+          <div class="form-field-group">
+            <label class="form-field-label">Selected Venue</label>
+            <input type="text" [value]="restaurant.name" readonly class="luxury-dark-input" style="background: #0D0D0C; color: var(--gold-light); font-weight: 600;" />
           </div>
 
           <!-- Selected Table Info -->
-          <div class="form-group">
-            <label>Selected Table</label>
-            <div *ngIf="selectedTable; else noTableSelected" class="selected-table-preview">
-              <span class="preview-number">Table {{ selectedTable.tableNumber }}</span>
-              <span class="preview-meta">({{ selectedTable.capacity }} Seats, {{ selectedTable.seatingType }})</span>
+          <div class="form-field-group">
+            <label class="form-field-label">Selected Seating</label>
+            <div *ngIf="selectedTable; else noTableSelectedPrompt" class="selected-table-badge-bar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D6B66A" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <div>
+                <strong style="color: var(--gold-light); font-size: 0.95rem; display: block;">Table {{ selectedTable.tableNumber }}</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">
+                  Max {{ selectedTable.capacity }} Guests &bull; {{ selectedTable.seatingType }} Zone
+                </span>
+              </div>
             </div>
-            <ng-template #noTableSelected>
-              <div class="table-prompt-box">
-                👉 Please click on an available table from the left layout.
+            <ng-template #noTableSelectedPrompt>
+              <div class="table-unselected-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Please select an available table from the floor plan on the left.</span>
               </div>
             </ng-template>
           </div>
 
           <!-- Date -->
-          <div class="form-group">
-            <label for="bookingDate">Date</label>
+          <div class="form-field-group">
+            <label for="bookingDate" class="form-field-label">Dining Date</label>
             <input
               type="date"
               id="bookingDate"
@@ -144,29 +207,29 @@
               [(ngModel)]="bookingDate"
               [min]="minDate"
               required
-              class="form-control"
+              class="luxury-dark-input"
             />
           </div>
 
           <!-- Time Slot -->
-          <div class="form-group">
-            <label for="bookingTime">Dining Time</label>
+          <div class="form-field-group">
+            <label for="bookingTime" class="form-field-label">Time Slot</label>
             <select
               id="bookingTime"
               name="bookingTime"
               [(ngModel)]="bookingTime"
               required
-              class="form-control"
+              class="luxury-dark-input"
             >
               <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
             </select>
           </div>
 
-          <!-- Number of Guests -->
-          <div class="form-group">
-            <label for="guestsCount">
-              Number of Guests
-              <small *ngIf="selectedTable">(Max: {{ selectedTable.capacity }})</small>
+          <!-- Guests -->
+          <div class="form-field-group">
+            <label for="guestsCount" class="form-field-label">
+              Party Size
+              <small *ngIf="selectedTable" style="color: var(--text-dark);">(Max: {{ selectedTable.capacity }})</small>
             </label>
             <input
               type="number"
@@ -176,17 +239,20 @@
               min="1"
               [max]="selectedTable ? selectedTable.capacity : 10"
               required
-              class="form-control"
+              class="luxury-dark-input"
             />
           </div>
 
           <!-- Submit Button -->
           <button
             type="submit"
-            class="btn btn-confirm"
+            class="btn btn-gold submit-reserve-btn"
             [disabled]="!selectedTable"
           >
-            {{ selectedTable ? 'Confirm & Book Table' : 'Select a Table Above First' }}
+            <span>{{ selectedTable ? 'Confirm & Reserve Table' : 'Select a Table Above First' }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
           </button>
 
         </form>
@@ -197,59 +263,75 @@
   </main>
 
   <ng-template #notFound>
-    <div class="not-found-container">
-      <h2>Restaurant Not Found</h2>
-      <p>The requested restaurant could not be located.</p>
-      <a routerLink="/customer/restaurants" class="btn btn-primary">Return to Restaurants</a>
+    <div style="text-align: center; padding: 5rem 2rem;">
+      <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem;">Dining Venue Not Found</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem;">The requested dining venue could not be retrieved from our registry.</p>
+      <a routerLink="/customer/restaurants" class="btn btn-gold">Return to Dining Directory</a>
     </div>
   </ng-template>
 
-  <!-- Reservation Confirmation Modal -->
-  <div *ngIf="bookingSuccess && createdReservation" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-success-header">
-        <span class="success-icon">🎉</span>
-        <h3>Reservation Confirmed!</h3>
-        <p>Your table has been reserved successfully.</p>
+  <!-- Reservation Confirmation Modal (Luxury Receipt) -->
+  <div *ngIf="bookingSuccess && createdReservation" class="modal-backdrop-luxury">
+    <div class="receipt-modal-card">
+
+      <div class="receipt-crest-mark">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M16 24L22 30L32 18" stroke="#D6B66A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
 
-      <div class="receipt-box">
-        <div class="receipt-row">
-          <span>Booking ID:</span>
-          <strong>#RES-{{ createdReservation.id }}</strong>
+      <span class="eyebrow-pill" style="margin-bottom: 0.5rem;">CONCIERGE CONFIRMATION</span>
+      <h3 class="receipt-modal-title">Reservation Confirmed</h3>
+      <p class="receipt-modal-sub">Your private dining table is guaranteed and prepared.</p>
+
+      <div class="receipt-table-frame">
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Confirmation Pass:</span>
+          <strong class="receipt-token-text">#RES-{{ createdReservation.id }}</strong>
         </div>
-        <div class="receipt-row">
-          <span>Restaurant:</span>
-          <strong>{{ restaurant?.name }}</strong>
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Dining Venue:</span>
+          <strong style="color: var(--text-primary);">{{ restaurant?.name }}</strong>
         </div>
-        <div class="receipt-row">
-          <span>Table:</span>
-          <strong>{{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</strong>
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Allocated Table:</span>
+          <strong style="color: var(--gold-light);">Table {{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</strong>
         </div>
-        <div class="receipt-row">
-          <span>Date & Time:</span>
-          <strong>{{ createdReservation.date }} at {{ createdReservation.time }}</strong>
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Date &amp; Time:</span>
+          <strong style="color: var(--text-primary);">{{ createdReservation.date }} &bull; {{ createdReservation.time }}</strong>
         </div>
-        <div class="receipt-row">
-          <span>Guests:</span>
-          <strong>{{ createdReservation.guests }} Guests</strong>
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Party Size:</span>
+          <strong style="color: var(--text-primary);">{{ createdReservation.guests }} Guests</strong>
         </div>
-        <div class="receipt-row">
-          <span>Status:</span>
-          <span class="status-confirmed">{{ createdReservation.status }}</span>
+        <div class="receipt-row-item">
+          <span style="color: var(--text-muted);">Status:</span>
+          <span class="badge-status badge-confirmed">{{ createdReservation.status }}</span>
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="bookAnother()">Book Another</button>
-        <button class="btn btn-primary" (click)="goToMyReservations()">View My Reservations</button>
+      <div class="receipt-actions-row">
+        <button class="btn btn-secondary-dark" (click)="bookAnother()">Book Another</button>
+        <button class="btn btn-gold" (click)="goToMyReservations()">My Reservations</button>
       </div>
+
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="page-footer">
-    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Concierge Table Registry</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
   </footer>
 
 </div>

@@ -11,6 +11,7 @@ import { Table } from '../../core/models/table.model';
 export interface EnrichedReservation extends Reservation {
   restaurantName?: string;
   restaurantLocation?: string;
+  restaurantImage?: string;
   tableNumber?: string;
   seatingType?: string;
 }
@@ -75,6 +76,7 @@ export class MyReservations implements OnInit {
             ...res,
             restaurantName: restaurant ? restaurant.name : `Restaurant #${res.restaurantId}`,
             restaurantLocation: restaurant ? restaurant.location : '',
+            restaurantImage: restaurant?.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
             tableNumber: table ? table.tableNumber : `Table #${res.tableId}`,
             seatingType: table ? table.seatingType : 'STANDARD',
           };

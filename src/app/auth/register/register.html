@@ -1,145 +1,145 @@
 <div class="register-container">
   <div class="register-card">
 
-    <h1>Restaurant Reservation</h1>
-    <h2>Customer Registration</h2>
+    <!-- Luxury Crest Mark -->
+    <div class="brand-crest">
+      <svg class="crest-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C6A15B" stroke-width="1.5" stroke-dasharray="2 3"/>
+        <circle cx="24" cy="24" r="18" stroke="#C6A15B" stroke-width="1"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C6A15B" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C6A15B" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
 
-    <form (ngSubmit)="register()">
+    <div class="register-header">
+      <span class="eyebrow-tag">MEMBERSHIP &bull; NEW PATRON</span>
+      <h1>Patron Registration</h1>
+      <p class="subtitle">Join our distinguished dining collective for priority table reservations.</p>
+    </div>
+
+    <form (ngSubmit)="register()" class="register-form">
 
       <!-- Full Name -->
       <div class="form-group">
         <label for="fullName">Full Name</label>
-
-        <input
-          type="text"
-          id="fullName"
-          name="fullName"
-          [(ngModel)]="fullName"
-          #nameField="ngModel"
-          placeholder="Enter your full name"
-          required
-        />
-
-        <small
-          class="error"
-          *ngIf="nameField.invalid && nameField.touched"
-        >
+        <div class="input-wrap">
+          <input
+            type="text"
+            id="fullName"
+            name="fullName"
+            [(ngModel)]="fullName"
+            #nameField="ngModel"
+            placeholder="Lord / Lady / Mr. / Ms. Full Name"
+            required
+            autocomplete="name"
+          />
+        </div>
+        <small class="error-text" *ngIf="nameField.invalid && nameField.touched">
           Full name is required.
         </small>
       </div>
 
       <!-- Email -->
       <div class="form-group">
-        <label for="email">Email</label>
-
-        <input
-          type="email"
-          id="email"
-          name="email"
-          [(ngModel)]="email"
-          #emailField="ngModel"
-          placeholder="Enter your email"
-          required
-        />
-
-        <small
-          class="error"
-          *ngIf="emailField.invalid && emailField.touched"
-        >
-          <span *ngIf="emailField.errors?.['required']">
-            Email is required.
-          </span>
-
-          <span *ngIf="emailField.errors?.['email']">
-            Please enter a valid email.
-          </span>
+        <label for="email">Email Address</label>
+        <div class="input-wrap">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="email"
+            #emailField="ngModel"
+            placeholder="patron@domain.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+        <small class="error-text" *ngIf="emailField.invalid && emailField.touched">
+          <span *ngIf="emailField.errors?.['required']">Email address is required.</span>
+          <span *ngIf="emailField.errors?.['email']">Please provide a valid email format.</span>
         </small>
       </div>
 
       <!-- Phone -->
       <div class="form-group">
-        <label for="phone">Phone Number</label>
-
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          [(ngModel)]="phone"
-          #phoneField="ngModel"
-          placeholder="Enter your phone number"
-          required
-          minlength="10"
-          maxlength="10"
-        />
-
-        <small
-          class="error"
-          *ngIf="phoneField.invalid && phoneField.touched"
-        >
-          <span *ngIf="phoneField.errors?.['required']">
-            Phone number is required.
-          </span>
-
-          <span *ngIf="phoneField.errors?.['minlength']">
-            Phone number must contain 10 digits.
-          </span>
+        <label for="phone">Direct Contact Number</label>
+        <div class="input-wrap">
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            [(ngModel)]="phone"
+            #phoneField="ngModel"
+            placeholder="10-digit mobile number"
+            required
+            minlength="10"
+            maxlength="10"
+            autocomplete="tel"
+          />
+        </div>
+        <small class="error-text" *ngIf="phoneField.invalid && phoneField.touched">
+          <span *ngIf="phoneField.errors?.['required']">Contact number is required.</span>
+          <span *ngIf="phoneField.errors?.['minlength']">Please enter a valid 10-digit number.</span>
         </small>
       </div>
 
-      <!-- Password -->
-      <div class="form-group">
-        <label for="password">Password</label>
+      <!-- Password Grid -->
+      <div class="form-row">
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              [(ngModel)]="password"
+              #passwordField="ngModel"
+              placeholder="Minimum 6 chars"
+              required
+              minlength="6"
+              autocomplete="new-password"
+            />
+          </div>
+          <small class="error-text" *ngIf="passwordField.invalid && passwordField.touched">
+            <span *ngIf="passwordField.errors?.['required']">Password required.</span>
+            <span *ngIf="passwordField.errors?.['minlength']">At least 6 chars.</span>
+          </small>
+        </div>
 
-        <input
-          type="password"
-          id="password"
-          name="password"
-          [(ngModel)]="password"
-          #passwordField="ngModel"
-          placeholder="Enter your password"
-          required
-          minlength="6"
-        />
-
-        <small
-          class="error"
-          *ngIf="passwordField.invalid && passwordField.touched"
-        >
-          <span *ngIf="passwordField.errors?.['required']">
-            Password is required.
-          </span>
-
-          <span *ngIf="passwordField.errors?.['minlength']">
-            Password must contain at least 6 characters.
-          </span>
-        </small>
-      </div>
-
-      <!-- Confirm Password -->
-      <div class="form-group">
-        <label for="confirmPassword">Confirm Password</label>
-
-        <input
-          type="password"
-          id="confirmPassword"
-          name="confirmPassword"
-          [(ngModel)]="confirmPassword"
-          placeholder="Confirm your password"
-          required
-        />
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              [(ngModel)]="confirmPassword"
+              placeholder="Re-enter password"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Register Button -->
-      <button type="submit">
-        Register
+      <button type="submit" class="submit-btn">
+        <span>Create Patron Account</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
       </button>
 
     </form>
 
-    <p>
-      Already have an account?
-      <a routerLink="/login">Login</a>
-    </p>
+    <div class="register-footer">
+      <p>
+        Already a distinguished member?
+        <a routerLink="/login">Sign in</a>
+      </p>
+    </div>
 
   </div>
 </div>

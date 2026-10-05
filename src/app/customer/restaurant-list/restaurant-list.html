@@ -1,28 +1,40 @@
 <div class="page-container">
 
-  <!-- Top Navigation Bar -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-brand" routerLink="/customer/dashboard">
-        <span class="brand-icon">🍽️</span>
-        <span class="brand-title">Restaurant Reservation</span>
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
       </div>
 
-      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
       </button>
 
-      <nav class="nav-links" [class.open]="isMobileMenuOpen">
-        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
-        <a class="nav-item active" routerLink="/customer/restaurants">Restaurants</a>
-        <a class="nav-item" routerLink="/customer/reservations">My Reservations</a>
-        <a class="nav-item" routerLink="/customer/queue">Queue Status</a>
-        <button class="logout-btn" (click)="logout()">
-          <span>Logout</span>
-          <span class="logout-icon">🚪</span>
-        </button>
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury active" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -31,94 +43,103 @@
   <main class="main-content">
 
     <!-- Header Section -->
-    <div class="page-header">
-      <div class="header-info">
-        <span class="badge">Partner Venues</span>
-        <h1>Restaurants Directory</h1>
-        <p class="subtitle">
-          Explore top-rated dining venues, check live table availability, and book your reservation.
+    <div class="directory-hero-banner">
+      <div class="directory-titles">
+        <span class="eyebrow-pill">
+          <span>✦</span>
+          <span>Curated Venues &bull; Dining Collection</span>
+        </span>
+        <h1>Distinguished Dining Destinations</h1>
+        <p>
+          Explore exceptional restaurants, discover distinctive cuisines, and reserve your preferred table with real-time seating allocation.
         </p>
       </div>
 
       <!-- Search Box -->
-      <div class="search-box">
-        <span class="search-icon">🔎</span>
+      <div class="directory-search-box">
+        <svg class="directory-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
         <input
           type="text"
           [(ngModel)]="searchQuery"
           (ngModelChange)="onSearchChange()"
-          placeholder="Search by restaurant name, cuisine, city..."
-          class="search-input"
+          placeholder="Search by restaurant, cuisine, or city..."
+          class="directory-search-input"
         />
-        <button *ngIf="searchQuery" class="clear-search" (click)="searchQuery = ''; onSearchChange()">✕</button>
+        <button *ngIf="searchQuery" class="directory-clear-btn" (click)="searchQuery = ''; onSearchChange()">✕</button>
       </div>
     </div>
 
-    <!-- Cuisine Filters -->
-    <div class="filter-pills">
-      <span class="filter-label">Cuisine:</span>
+    <!-- Cuisine Filter Bar -->
+    <div class="editorial-filter-bar">
       <button
         *ngFor="let cuisine of cuisines"
         type="button"
-        class="pill-btn"
+        class="editorial-filter-pill"
         [class.active]="selectedCuisine === cuisine"
         (click)="onCuisineChange(cuisine)"
       >
-        {{ cuisine === 'ALL' ? 'All Cuisines' : cuisine }}
+        {{ cuisine === 'ALL' ? 'All Collections' : cuisine }}
       </button>
     </div>
 
     <!-- Results Counter -->
-    <div class="results-meta">
-      <span>Showing <strong>{{ filteredRestaurants.length }}</strong> restaurants</span>
+    <div style="font-size: 0.84rem; color: var(--text-dark); margin-bottom: 2rem;">
+      Presenting <strong style="color: var(--gold-light);">{{ filteredRestaurants.length }}</strong> curated dining establishments
     </div>
 
-    <!-- Restaurants Grid -->
-    <div *ngIf="filteredRestaurants.length > 0; else noResults" class="restaurant-grid">
-      <div *ngFor="let r of filteredRestaurants" class="restaurant-card">
+    <!-- Directory Cards Grid -->
+    <div *ngIf="filteredRestaurants.length > 0; else noResults" class="directory-cards-grid">
+      <div *ngFor="let r of filteredRestaurants" class="directory-restaurant-card">
 
-        <div class="card-header">
-          <div class="title-wrap">
-            <h2 class="restaurant-name">{{ r.name }}</h2>
-            <div class="restaurant-location">
-              <span>📍</span>
-              <span>{{ r.location }}</span>
-            </div>
-          </div>
-          <div class="rating-badge">
-            <span>⭐</span>
-            <strong>{{ r.rating.toFixed(1) }}</strong>
+        <!-- Prominent Image Box -->
+        <div class="directory-card-img-box">
+          <img
+            [src]="r.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'"
+            [alt]="r.name"
+          />
+          <span class="masonry-tag-float">{{ r.cuisine }}</span>
+          <div class="masonry-rating-float">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span>{{ r.rating.toFixed(1) }}</span>
           </div>
         </div>
 
-        <div class="cuisine-tag-wrap">
-          <span class="cuisine-pill">🍲 {{ r.cuisine }}</span>
-        </div>
+        <!-- Card Body -->
+        <div class="directory-card-body">
+          <h2 class="directory-card-title">{{ r.name }}</h2>
+          <div class="directory-card-location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>{{ r.location }}</span>
+          </div>
 
-        <p class="restaurant-desc">{{ r.description }}</p>
+          <p class="directory-card-desc">{{ r.description }}</p>
 
-        <!-- Availability Status -->
-        <div class="availability-status">
-          <span class="avail-icon">🪑</span>
-          <div class="avail-info">
-            <span class="avail-title">Available Tables:</span>
-            <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="avail-count">
-              {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Free
+          <!-- Table Availability -->
+          <div class="directory-card-avail">
+            <span style="color: var(--text-muted);">Live Availability:</span>
+            <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="directory-avail-count">
+              ● {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
             </strong>
             <ng-template #loadingTables>
-              <small>Checking tables...</small>
+              <small style="color: var(--text-dark);">Checking tables...</small>
             </ng-template>
           </div>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="card-actions">
-          <button class="btn btn-secondary" (click)="viewDetails(r.id)">
-            View Tables
-          </button>
-          <button class="btn btn-primary" (click)="viewDetails(r.id)">
-            Reserve Table
-          </button>
+          <!-- Actions -->
+          <div class="directory-card-actions">
+            <button class="btn btn-secondary-dark" (click)="viewDetails(r.id)">
+              View Details
+            </button>
+            <button class="btn btn-gold" (click)="viewDetails(r.id)">
+              Reserve Table
+            </button>
+          </div>
         </div>
 
       </div>
@@ -126,11 +147,10 @@
 
     <!-- No Results State -->
     <ng-template #noResults>
-      <div class="no-results-card">
-        <span class="no-results-icon">🍽️</span>
-        <h3>No restaurants match your search</h3>
-        <p>Try searching for a different cuisine or location.</p>
-        <button class="btn btn-secondary" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
+      <div style="text-align: center; background: #151310; border: 1px dashed rgba(201, 164, 92, 0.3); padding: 4rem 2rem; margin: 2rem 0;">
+        <h3 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.5rem;">No matching dining venues found</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">Try refining your search keyword or selecting "All Collections".</p>
+        <button class="btn btn-outline-gold" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
           Reset Search Filters
         </button>
       </div>
@@ -138,9 +158,17 @@
 
   </main>
 
-  <!-- Footer -->
-  <footer class="page-footer">
-    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Concierge Table Registry</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
   </footer>
 
 </div>

@@ -13,24 +13,30 @@ export class RestaurantService {
       name: 'Spice Symphony Bistro',
       location: 'Bhubaneswar, Odisha',
       cuisine: 'North Indian & Mughlai',
-      description: 'Authentic royal curries, tandoor specials, and traditional delicacies in an elegant setting.',
-      rating: 4.8
+      description: 'Authentic royal curries, tandoor specials, and traditional delicacies in an elegant candlelit setting.',
+      rating: 4.8,
+      tagline: 'Imperial Flavors & Royal Dining',
+      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80'
     },
     {
       id: 2,
       name: 'Coastal Breeze Seafood & Grill',
       location: 'Puri Beach Road',
       cuisine: 'Seafood & Coastal Odia',
-      description: 'Fresh seafood delicacies with scenic outdoor, rooftop, and sea breeze dining.',
-      rating: 4.6
+      description: 'Fresh seafood delicacies with scenic outdoor, rooftop, and sea breeze dining overlooking the coastline.',
+      rating: 4.6,
+      tagline: 'Artisanal Coastal Gastronomy',
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80'
     },
     {
       id: 3,
       name: 'Urban Hearth Fine Dine',
       location: 'Saheed Nagar, Bhubaneswar',
       cuisine: 'Multi-Cuisine & Italian',
-      description: 'Cozy, modern ambience with wood-fired pizzas, gourmet pastas, and desserts.',
-      rating: 4.7
+      description: 'Intimate, modern ambience with wood-fired artisanal pizzas, truffle gourmet pastas, and vintage wines.',
+      rating: 4.7,
+      tagline: 'Contemporary European Craft',
+      imageUrl: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1200&q=80'
     }
   ];
 

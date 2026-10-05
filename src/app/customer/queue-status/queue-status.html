@@ -1,190 +1,214 @@
 <div class="page-container">
 
-  <!-- Top Navigation Bar -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-brand" routerLink="/customer/dashboard">
-        <span class="brand-icon">🍽️</span>
-        <span class="brand-title">Restaurant Reservation</span>
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
       </div>
 
-      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
-        <span class="hamburger-bar"></span>
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
       </button>
 
-      <nav class="nav-links" [class.open]="isMobileMenuOpen">
-        <a class="nav-item" routerLink="/customer/dashboard">Dashboard</a>
-        <a class="nav-item" routerLink="/customer/restaurants">Restaurants</a>
-        <a class="nav-item" routerLink="/customer/reservations">My Reservations</a>
-        <a class="nav-item active" routerLink="/customer/queue">Queue Status</a>
-        <button class="logout-btn" (click)="logout()">
-          <span>Logout</span>
-          <span class="logout-icon">🚪</span>
-        </button>
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury active" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
 
   <!-- Notification Banner -->
-  <div *ngIf="notificationMessage" class="notification-banner">
-    <span>{{ notificationMessage }}</span>
-    <button class="close-banner" (click)="notificationMessage = ''">✕</button>
+  <div *ngIf="notificationMessage" class="luxury-banner">
+    <div class="banner-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>{{ notificationMessage }}</span>
+    </div>
+    <button class="banner-close-btn" (click)="notificationMessage = ''">✕</button>
   </div>
 
   <!-- Main Content -->
   <main class="main-content">
 
     <!-- Header Section -->
-    <div class="page-header">
-      <div class="header-info">
-        <span class="badge">Live Waiting Line</span>
-        <h1>Digital Queue Tracker</h1>
-        <p class="subtitle">
-          Monitor your real-time position in line without standing at the restaurant entrance.
+    <div class="directory-hero-banner" style="margin-bottom: 3rem;">
+      <div>
+        <span class="eyebrow-pill">
+          <span>✦</span>
+          <span>Live Concierge &bull; Waitlist Tracker</span>
+        </span>
+        <h1 style="font-size: 2.2rem; color: var(--text-primary); margin-bottom: 0.35rem;">Digital Priority Queue</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 600px; margin: 0;">
+          Monitor your real-time position in line with complete transparency without standing at entrance counters.
         </p>
       </div>
 
       <!-- Refresh Action -->
-      <div class="header-action">
+      <div>
         <button
-          class="btn btn-secondary"
+          class="btn btn-secondary-dark"
           (click)="refreshStatus()"
           [disabled]="isRefreshing"
         >
-          <span class="refresh-icon" [class.spin]="isRefreshing">🔄</span>
+          <svg class="refresh-svg" [class.spinning-icon]="isRefreshing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
           <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh Status' }}</span>
         </button>
       </div>
     </div>
 
     <!-- Active Queue Ticket Display -->
-    <div *ngIf="currentTicket; else noActiveTicket" class="queue-card-wrap">
+    <div *ngIf="currentTicket; else noActiveTicket" class="queue-container">
 
-      <div class="queue-main-card">
+      <div class="queue-card-luxury">
 
-        <!-- Top Card Row: Token and Status Badge -->
-        <div class="ticket-header">
-          <div class="ticket-id-wrap">
-            <span class="ticket-tag">Your Waitlist Token</span>
-            <div class="ticket-number">{{ currentTicket.ticketNumber }}</div>
+        <!-- Top Row: Token and Status Badge -->
+        <div class="queue-token-hero-row">
+          <div>
+            <span class="eyebrow-pill" style="margin-bottom: 0.4rem;">DIGITAL PRIORITY PASS</span>
+            <div class="queue-token-number">{{ currentTicket.ticketNumber }}</div>
           </div>
 
-          <div class="status-wrap">
+          <div>
             <span
-              class="status-pill"
-              [class.status-waiting]="currentTicket.status === 'WAITING'"
-              [class.status-serving]="currentTicket.status === 'SERVING'"
-              [class.status-completed]="currentTicket.status === 'COMPLETED'"
+              class="badge-status"
+              [class.badge-waiting]="currentTicket.status === 'WAITING'"
+              [class.badge-serving]="currentTicket.status === 'SERVING' || currentTicket.status === 'COMPLETED'"
             >
               ● {{ currentTicket.status }}
             </span>
           </div>
         </div>
 
-        <!-- Restaurant Banner -->
-        <div class="venue-info" *ngIf="restaurant">
-          <span class="venue-icon">🏪</span>
-          <div>
+        <!-- Venue Banner -->
+        <div class="venue-info-box" *ngIf="restaurant">
+          <div class="venue-icon-crest">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.8">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="venue-text">
             <h3 class="venue-name">{{ restaurant.name }}</h3>
-            <span class="venue-loc">📍 {{ restaurant.location }} • 🍲 {{ restaurant.cuisine }}</span>
+            <span class="venue-meta">
+              {{ restaurant.location }} &bull; {{ restaurant.cuisine }}
+            </span>
           </div>
         </div>
 
-        <!-- 5. Visual Queue Progress Indicator -->
-        <div class="progress-section">
-          <div class="progress-header">
-            <span class="progress-title">Queue Progress</span>
-            <span class="progress-pct">{{ progressPercentage }}%</span>
+        <!-- 4-Step Horizontal Journey Progress -->
+        <div class="queue-journey-bar">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-primary);">
+              Queue Journey
+            </span>
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--gold-light);">
+              {{ progressPercentage }}%
+            </span>
           </div>
 
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" [style.width.%]="progressPercentage"></div>
+          <div class="journey-progress-track">
+            <div class="journey-progress-fill" [style.width.%]="progressPercentage"></div>
           </div>
 
-          <div class="progress-steps">
-            <div class="step-point completed">
-              <span class="step-dot">1</span>
-              <span class="step-name">Ticket Issued</span>
+          <div class="journey-steps-grid">
+            <div class="journey-step-point completed">
+              <span class="journey-step-dot">✓</span>
+              <span class="journey-step-name">Ticket Issued</span>
             </div>
             <div
-              class="step-point"
+              class="journey-step-point"
               [class.active]="currentTicket.status === 'WAITING'"
               [class.completed]="currentTicket.status === 'SERVING' || currentTicket.status === 'COMPLETED'"
             >
-              <span class="step-dot">2</span>
-              <span class="step-name">In Waitlist</span>
+              <span class="journey-step-dot">2</span>
+              <span class="journey-step-name">In Waitlist</span>
             </div>
             <div
-              class="step-point"
+              class="journey-step-point"
               [class.active]="currentTicket.status === 'SERVING'"
               [class.completed]="currentTicket.status === 'COMPLETED'"
             >
-              <span class="step-dot">3</span>
-              <span class="step-name">Table Ready</span>
+              <span class="journey-step-dot">3</span>
+              <span class="journey-step-name">Table Ready</span>
             </div>
             <div
-              class="step-point"
+              class="journey-step-point"
               [class.completed]="currentTicket.status === 'COMPLETED'"
             >
-              <span class="step-dot">4</span>
-              <span class="step-name">Seated</span>
+              <span class="journey-step-dot">4</span>
+              <span class="journey-step-name">Seated</span>
             </div>
           </div>
         </div>
 
-        <!-- Status Highlights Grid -->
-        <div class="metrics-grid">
-
-          <div class="metric-box">
-            <span class="metric-icon">👥</span>
-            <div class="metric-val">{{ currentTicket.peopleAhead }}</div>
-            <div class="metric-label">Parties Ahead</div>
-            <small class="metric-hint">Groups waiting before you</small>
+        <!-- Metrics Strip -->
+        <div class="queue-metrics-strip">
+          <div class="queue-metric-box">
+            <div class="queue-metric-val">{{ currentTicket.peopleAhead }}</div>
+            <div class="queue-metric-label">Parties Ahead</div>
           </div>
 
-          <div class="metric-box">
-            <span class="metric-icon">⏳</span>
-            <div class="metric-val">
-              {{ currentTicket.status === 'SERVING' ? '0 min' : '~' + currentTicket.estimatedWaitMinutes + ' min' }}
+          <div class="queue-metric-box">
+            <div class="queue-metric-val">
+              {{ currentTicket.status === 'SERVING' ? 'Ready' : '~' + currentTicket.estimatedWaitMinutes + 'm' }}
             </div>
-            <div class="metric-label">Estimated Wait</div>
-            <small class="metric-hint">Based on current turnover</small>
+            <div class="queue-metric-label">Estimated Wait</div>
           </div>
 
-          <div class="metric-box">
-            <span class="metric-icon">🎯</span>
-            <div class="metric-val">#{{ queuePosition }}</div>
-            <div class="metric-label">Queue Position</div>
-            <small class="metric-hint">Current place in line</small>
+          <div class="queue-metric-box">
+            <div class="queue-metric-val text-gold">#{{ queuePosition }}</div>
+            <div class="queue-metric-label">Queue Position</div>
           </div>
 
-          <div class="metric-box">
-            <span class="metric-icon">🪑</span>
-            <div class="metric-val">{{ currentTicket.guests }}</div>
-            <div class="metric-label">Party Guests</div>
-            <small class="metric-hint">Requested seats</small>
+          <div class="queue-metric-box">
+            <div class="queue-metric-val">{{ currentTicket.guests }}</div>
+            <div class="queue-metric-label">Party Guests</div>
           </div>
-
         </div>
 
-        <!-- Serving Alert Box if Ready -->
-        <div *ngIf="currentTicket.status === 'SERVING'" class="serving-alert">
-          <span class="serving-bell">🔔</span>
+        <!-- Table Ready Alert Banner -->
+        <div *ngIf="currentTicket.status === 'SERVING'" class="queue-ready-alert">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
           <div>
-            <strong>Your table is ready!</strong>
-            <p>Please approach the restaurant greeting counter with token <strong>{{ currentTicket.ticketNumber }}</strong>.</p>
+            <strong style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">Your Table is Ready!</strong>
+            <span style="font-size: 0.82rem;">Please present your digital token <strong>{{ currentTicket.ticketNumber }}</strong> at the maître d' desk.</span>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="queue-actions">
-          <button class="btn btn-secondary" (click)="refreshStatus()">
-            🔄 Refresh Status
+        <!-- Actions -->
+        <div class="queue-actions-flex">
+          <button class="btn btn-secondary-dark" (click)="refreshStatus()">
+            <span>Refresh Status</span>
           </button>
-          <button class="btn btn-leave" (click)="leaveQueue()">
-            🚫 Leave Queue
+          <button class="btn btn-burgundy" (click)="leaveQueue()">
+            <span>Leave Waitlist</span>
           </button>
         </div>
 
@@ -194,26 +218,26 @@
 
     <!-- No Active Ticket State: Quick Join Form -->
     <ng-template #noActiveTicket>
-      <div class="no-ticket-card">
-        <span class="empty-icon">⏱️</span>
-        <h2>No Active Queue Ticket</h2>
-        <p class="empty-sub">
-          You are not currently waiting in any digital queue. Join a line below or reserve a table in advance!
+      <div style="max-width: 680px; margin: 0 auto; background: #151310; border: 1px solid rgba(201, 164, 92, 0.25); border-radius: 2px; padding: 3rem 2.5rem; text-align: center;">
+        <span class="eyebrow-pill" style="margin-bottom: 0.5rem;">DIGITAL CONCIERGE</span>
+        <h2 style="font-size: 1.8rem; color: var(--text-primary); margin-bottom: 0.5rem;">No Active Waitlist Token</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 2.25rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+          You are not currently in any waiting line. Join a partner venue waitlist below or reserve a table in advance.
         </p>
 
         <!-- Quick Join Waitlist Form -->
-        <div class="join-box">
-          <h3>Join Restaurant Waitlist</h3>
+        <div style="background: #0D0D0C; border: 1px solid rgba(201, 164, 92, 0.2); padding: 2rem; text-align: left;">
+          <h3 style="font-size: 1.25rem; color: var(--text-primary); margin-bottom: 1.25rem;">Join Restaurant Waitlist</h3>
 
-          <form (ngSubmit)="joinNewQueue()" class="join-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="selectRestaurant">Select Restaurant</label>
+          <form (ngSubmit)="joinNewQueue()" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+              <div class="form-field-group">
+                <label class="form-field-label">Select Restaurant</label>
                 <select
                   id="selectRestaurant"
                   name="selectRestaurant"
                   [(ngModel)]="selectedRestaurantId"
-                  class="form-control"
+                  class="luxury-dark-input"
                 >
                   <option *ngFor="let r of restaurants" [value]="r.id">
                     {{ r.name }} ({{ r.location }})
@@ -221,8 +245,8 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label for="joinGuests">Party Size (Guests)</label>
+              <div class="form-field-group">
+                <label class="form-field-label">Party Size</label>
                 <input
                   type="number"
                   id="joinGuests"
@@ -231,30 +255,40 @@
                   min="1"
                   max="12"
                   required
-                  class="form-control"
+                  class="luxury-dark-input"
                 />
               </div>
             </div>
 
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
-                🎟️ Join Waiting Queue
+            <div style="display: flex; gap: 0.85rem; flex-wrap: wrap; margin-top: 0.5rem;">
+              <button type="submit" class="btn btn-gold">
+                <span>Join Waiting Queue</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </button>
-              <a routerLink="/customer/restaurants" class="btn btn-secondary">
+              <a routerLink="/customer/restaurants" class="btn btn-secondary-dark">
                 Or Reserve Table in Advance
               </a>
             </div>
           </form>
         </div>
-
       </div>
     </ng-template>
 
   </main>
 
-  <!-- Footer -->
-  <footer class="page-footer">
-    <p>© 2026 Restaurant Table Reservation & Queue Management System • Customer Module</p>
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Concierge Table Registry</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
   </footer>
 
 </div>
