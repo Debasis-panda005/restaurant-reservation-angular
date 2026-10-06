@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { ReviewService } from '../../core/services/review.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { Restaurant } from '../../core/models/restaurant.model';
@@ -29,6 +30,7 @@ export class MyReservations implements OnInit {
   activeFilter: string = 'ALL';
   notificationMessage: string = '';
   isMobileMenuOpen: boolean = false;
+  reviewedReservationIds = new Set<number>();
 
   private restaurantsMap = new Map<number, Restaurant>();
   private tablesMap = new Map<number, Table>();
@@ -36,6 +38,7 @@ export class MyReservations implements OnInit {
   constructor(
     private reservationService: ReservationService,
     private restaurantService: RestaurantService,
+    private reviewService: ReviewService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -83,6 +86,17 @@ export class MyReservations implements OnInit {
         });
 
         this.applyFilter();
+
+        // Check review submission status for completed reservations
+        this.reservations.forEach((res) => {
+          this.reviewService.hasReviewedReservation(res.id).subscribe({
+            next: (reviewed) => {
+              if (reviewed) {
+                this.reviewedReservationIds.add(res.id);
+              }
+            }
+          });
+        });
       },
     });
   }
@@ -100,6 +114,14 @@ export class MyReservations implements OnInit {
   setFilter(filter: string): void {
     this.activeFilter = filter;
     this.applyFilter();
+  }
+
+  isReservationReviewed(reservationId: number): boolean {
+    return this.reviewedReservationIds.has(reservationId);
+  }
+
+  rateExperience(reservationId: number): void {
+    this.router.navigate(['/customer/reservations', reservationId, 'review']);
   }
 
   cancelBooking(reservation: EnrichedReservation): void {

@@ -3,21 +3,31 @@ import { provideRouter, Router } from '@angular/router';
 import { MyReservations, EnrichedReservation } from './my-reservations';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { ReviewService } from '../../core/services/review.service';
+import { AuthService } from '../../core/services/auth.service';
 
 describe('MyReservations', () => {
   let component: MyReservations;
   let fixture: ComponentFixture<MyReservations>;
   let reservationService: ReservationService;
+  let reviewService: ReviewService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MyReservations],
-      providers: [provideRouter([]), ReservationService, RestaurantService],
+      providers: [
+        provideRouter([]),
+        ReservationService,
+        RestaurantService,
+        ReviewService,
+        AuthService,
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MyReservations);
     component = fixture.componentInstance;
     reservationService = TestBed.inject(ReservationService);
+    reviewService = TestBed.inject(ReviewService);
     fixture.detectChanges();
   });
 
@@ -69,5 +79,20 @@ describe('MyReservations', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith(['/customer/reservations', 1001, 'reschedule']);
   });
-});
 
+  it('should navigate to review page when rateExperience is called', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    component.rateExperience(1003);
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/customer/reservations', 1003, 'review']);
+  });
+
+  it('should correctly report whether a completed reservation is reviewed', () => {
+    component.reviewedReservationIds.add(1004);
+
+    expect(component.isReservationReviewed(1004)).toBe(true);
+    expect(component.isReservationReviewed(1003)).toBe(false);
+  });
+});

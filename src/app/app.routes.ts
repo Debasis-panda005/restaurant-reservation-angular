@@ -57,6 +57,13 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'customer/reservations/:id/review',
+    loadComponent: () =>
+      import('./customer/restaurant-review/restaurant-review').then(
+        (m) => m.default || m.RestaurantReview
+      )
+  },
+  {
     path: 'customer/my-reservations',
     redirectTo: 'customer/reservations',
     pathMatch: 'full'

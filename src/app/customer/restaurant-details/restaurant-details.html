@@ -88,11 +88,12 @@
             {{ restaurant.cuisine }}
           </div>
           <span style="color: var(--text-dark);">&bull;</span>
-          <div style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(201, 164, 92, 0.15); border: 1px solid var(--gold-primary); color: var(--gold-light); font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 2px;">
+          <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(201, 164, 92, 0.15); border: 1px solid var(--gold-primary); color: var(--gold-light); font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 2px;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            <span>{{ restaurant.rating.toFixed(1) }}</span>
+            <span>{{ averageRating > 0 ? averageRating.toFixed(1) : restaurant.rating.toFixed(1) }}</span>
+            <span *ngIf="reviewCount > 0" style="font-weight: 400; color: var(--text-muted); font-size: 0.74rem;">({{ reviewCount }} reviews)</span>
           </div>
         </div>
 
@@ -289,6 +290,79 @@
       </section>
 
     </div>
+
+    <!-- Section: Guest Experiences & Ratings -->
+    <section class="guest-experiences-section">
+      <div class="guest-section-header">
+        <span class="eyebrow-pill" style="margin-bottom: 0.4rem;">
+          <span>✦</span>
+          <span>Verified Patron Impressions</span>
+        </span>
+        <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.35rem;">Guest Experiences</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0; max-width: 600px;">
+          Reflections from connoisseurs and patrons who have dined at {{ restaurant.name }}.
+        </p>
+      </div>
+
+      <!-- Rating Summary & Breakdown Card -->
+      <div class="rating-overview-card">
+        <div class="rating-hero-block">
+          <div class="rating-big-number">{{ averageRating > 0 ? averageRating.toFixed(1) : restaurant.rating.toFixed(1) }}</div>
+          <div class="rating-hero-stars">
+            <span *ngFor="let s of stars" class="star-hero" [class.filled]="isStarFilled(s)">★</span>
+          </div>
+          <div class="rating-hero-count">
+            <span>{{ reviewCount }} verified {{ reviewCount === 1 ? 'review' : 'reviews' }}</span>
+          </div>
+        </div>
+
+        <div class="rating-distribution-block">
+          <div *ngFor="let s of [5, 4, 3, 2, 1]" class="dist-row">
+            <span class="dist-star-label">{{ s }} ★</span>
+            <div class="dist-bar-track">
+              <div class="dist-bar-fill" [style.width.%]="getRatingPercentage(s)"></div>
+            </div>
+            <span class="dist-count-label">{{ ratingDistribution[s] || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews Grid or Empty State -->
+      <div *ngIf="reviews.length > 0; else noReviewsState" class="guest-reviews-grid">
+        <div *ngFor="let review of reviews" class="guest-review-card">
+          <div class="review-card-top">
+            <div class="patron-badge">
+              <div class="patron-avatar-crest">
+                <span>{{ (review.customerName || 'G').charAt(0) }}</span>
+              </div>
+              <div>
+                <strong class="patron-name">{{ review.customerName || 'Verified Guest' }}</strong>
+                <span class="patron-verified-tag">✓ Verified Patron</span>
+              </div>
+            </div>
+            <div class="review-stars-wrap">
+              <span *ngFor="let s of stars" class="star-mini" [class.filled]="s <= review.rating">★</span>
+            </div>
+          </div>
+
+          <p class="review-card-text">&ldquo;{{ review.comment }}&rdquo;</p>
+
+          <div class="review-card-footer">
+            <span class="review-date-text">{{ formatReviewDate(review.createdAt) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noReviewsState>
+        <div class="reviews-empty-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <h3 style="font-size: 1.25rem; color: var(--text-primary); margin: 0.75rem 0 0.25rem 0;">No guest reviews yet.</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Be the first to share your dining experience.</p>
+        </div>
+      </ng-template>
+    </section>
 
   </main>
 

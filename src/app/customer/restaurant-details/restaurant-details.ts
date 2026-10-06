@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
+import { ReviewService } from '../../core/services/review.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { Reservation } from '../../core/models/reservation.model';
+import { Review } from '../../core/models/review.model';
 
 @Component({
   selector: 'app-restaurant-details',
@@ -20,6 +22,13 @@ export class RestaurantDetails implements OnInit {
   restaurant: Restaurant | null = null;
   tables: Table[] = [];
   selectedTable: Table | null = null;
+
+  // Reviews & Rating State
+  reviews: Review[] = [];
+  averageRating: number = 0;
+  reviewCount: number = 0;
+  ratingDistribution: { [key: number]: number } = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  readonly stars: number[] = [1, 2, 3, 4, 5];
 
   // Reservation Form State
   bookingDate: string = '';
@@ -50,6 +59,7 @@ export class RestaurantDetails implements OnInit {
     private router: Router,
     private restaurantService: RestaurantService,
     private reservationService: ReservationService,
+    private reviewService: ReviewService,
     private authService: AuthService
   ) {}
 
@@ -62,10 +72,11 @@ export class RestaurantDetails implements OnInit {
     this.bookingDate = `${yyyy}-${mm}-${dd}`;
     this.minDate = this.bookingDate;
 
-    const idParam = this.route.snapshot.paramMap.get('id');
-    const restaurantId = idParam ? Number(idParam) : 1;
-
-    this.loadRestaurantDetails(restaurantId);
+    this.route.paramMap.subscribe((params) => {
+      const idParam = params.get('id');
+      const restaurantId = idParam ? Number(idParam) : 1;
+      this.loadRestaurantDetails(restaurantId);
+    });
   }
 
   loadRestaurantDetails(restaurantId: number): void {
@@ -80,6 +91,65 @@ export class RestaurantDetails implements OnInit {
         this.tables = tables;
       },
     });
+
+    this.loadReviewsAndRatings(restaurantId);
+  }
+
+  loadReviewsAndRatings(restaurantId: number): void {
+    this.reviewService.getReviewsByRestaurantId(restaurantId).subscribe({
+      next: (reviews) => {
+        this.reviews = reviews;
+      },
+    });
+
+    this.reviewService.getRestaurantRating(restaurantId).subscribe({
+      next: (rating) => {
+        this.averageRating = rating;
+      },
+    });
+
+    this.reviewService.getReviewCount(restaurantId).subscribe({
+      next: (count) => {
+        this.reviewCount = count;
+      },
+    });
+
+    this.reviewService.getRatingDistribution(restaurantId).subscribe({
+      next: (distribution) => {
+        this.ratingDistribution = distribution;
+      },
+    });
+  }
+
+  getRatingPercentage(ratingValue: number): number {
+    if (!this.reviewCount || this.reviewCount === 0) return 0;
+    const count = this.ratingDistribution[ratingValue] || 0;
+    return Math.round((count / this.reviewCount) * 100);
+  }
+
+  isStarFilled(star: number): boolean {
+    const val = this.averageRating > 0 ? this.averageRating : (this.restaurant?.rating || 0);
+    return star <= Math.round(val);
+  }
+
+  formatReviewDate(dateStr: string | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        return new Date(year, month, day).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
   }
 
   /**

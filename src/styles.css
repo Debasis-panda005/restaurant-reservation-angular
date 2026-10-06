@@ -234,6 +234,12 @@ img {
   border: 1px solid var(--status-confirmed-border);
 }
 
+.badge-completed {
+  background-color: rgba(201, 164, 92, 0.18);
+  color: var(--gold-light);
+  border: 1px solid var(--gold-border-bright);
+}
+
 .badge-waiting, .badge-pending {
   background-color: var(--status-waiting-bg);
   color: var(--gold-light);
@@ -3301,6 +3307,594 @@ img {
   }
   .editorial-date-input {
     max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   FEATURE 4: CUSTOMER REVIEWS & RATINGS LUXURY EDITORIAL STYLES
+   ========================================================================== */
+
+/* Review Submitted Tag in My Reservations */
+.review-submitted-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold-light);
+  background: rgba(201, 164, 92, 0.1);
+  border: 1px solid rgba(201, 164, 92, 0.35);
+  padding: 0.45rem 0.85rem;
+  border-radius: 2px;
+  width: 100%;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-sizing: border-box;
+}
+
+/* Restaurant Review Component Cards */
+.luxury-review-form-card,
+.review-state-card {
+  background: rgba(18, 17, 15, 0.92);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 3rem;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.review-state-card {
+  text-align: center;
+  padding: 4rem 2.5rem;
+}
+
+.review-crest-mark {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.review-state-title {
+  font-size: 2.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-family: var(--font-serif);
+}
+
+.review-state-desc {
+  font-size: 0.98rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Form Editorial Header */
+.review-form-header {
+  text-align: center;
+  margin-bottom: 2.25rem;
+}
+
+.review-main-heading {
+  font-size: 2.3rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.review-main-sub {
+  color: var(--text-muted);
+  font-size: 0.96rem;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Dining Experience Banner */
+.dining-experience-banner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: rgba(22, 20, 18, 0.75);
+  border: 1px solid rgba(201, 164, 92, 0.2);
+  padding: 1.5rem 1.75rem;
+  border-radius: 3px;
+  margin-bottom: 2.25rem;
+}
+
+.experience-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold-primary);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.experience-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.experience-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.experience-meta-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.experience-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.86rem;
+}
+
+.experience-meta-item .meta-label {
+  color: var(--text-muted);
+}
+
+.experience-meta-item .meta-val {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.experience-meta-item .meta-val.gold {
+  color: var(--gold-light);
+  letter-spacing: 0.05em;
+}
+
+/* Star Rating Selector */
+.rating-selection-group {
+  margin-bottom: 2rem;
+}
+
+.star-rating-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--trans-fast), filter var(--trans-fast);
+  outline: none;
+}
+
+.star-btn:hover {
+  transform: scale(1.18);
+}
+
+.star-btn:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 4px;
+}
+
+.star-btn .star-svg {
+  width: 38px;
+  height: 38px;
+  stroke: var(--gold-primary);
+  fill: transparent;
+  transition: all var(--trans-fast);
+}
+
+.star-btn.is-active .star-svg,
+.star-btn.is-selected .star-svg {
+  fill: #C9A45C;
+  stroke: #C9A45C;
+  filter: drop-shadow(0 0 8px rgba(201, 164, 92, 0.45));
+}
+
+.rating-labels-display {
+  min-height: 1.5rem;
+}
+
+.rating-empty-hint {
+  font-size: 0.84rem;
+  color: var(--text-dark);
+  font-style: italic;
+}
+
+.rating-active-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(201, 164, 92, 0.12);
+  border: 1px solid var(--gold-border);
+  color: var(--gold-light);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+/* Review Textarea */
+.review-textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.review-char-counter {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-char-counter.counter-invalid {
+  color: #EFA7A7;
+}
+
+/* Actions */
+.review-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.submit-review-btn {
+  padding: 0.85rem 2rem;
+  font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Success Receipt Card */
+.review-receipt-box {
+  background: rgba(13, 13, 12, 0.9);
+  border: 1px solid var(--gold-border);
+  border-radius: 3px;
+  padding: 2rem;
+  text-align: left;
+  margin: 0 auto 2.25rem auto;
+  max-width: 620px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.receipt-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(201, 164, 92, 0.2);
+  margin-bottom: 1.25rem;
+}
+
+.review-venue-name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.review-token-badge {
+  font-size: 0.82rem;
+  color: var(--gold-light);
+}
+
+.review-stars-summary {
+  text-align: right;
+}
+
+.gold-stars-row {
+  display: flex;
+  gap: 0.2rem;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.star-static {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.star-static.filled {
+  color: #C9A45C;
+  text-shadow: 0 0 6px rgba(201, 164, 92, 0.5);
+}
+
+.rating-score-pill {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.review-quote-preview {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--gold-primary);
+}
+
+.receipt-patron-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.receipt-patron-line strong {
+  color: var(--text-primary);
+}
+
+.success-actions-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   RESTAURANT DETAILS: GUEST EXPERIENCES & REVIEWS SECTION
+   ========================================================================== */
+
+.guest-experiences-section {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid rgba(201, 164, 92, 0.2);
+}
+
+.guest-section-header {
+  margin-bottom: 2rem;
+}
+
+.rating-overview-card {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  background: rgba(18, 17, 15, 0.88);
+  border: 1px solid var(--gold-border);
+  padding: 2.25rem;
+  border-radius: 4px;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.rating-hero-block {
+  text-align: center;
+  padding-right: 2rem;
+  border-right: 1px solid rgba(201, 164, 92, 0.18);
+}
+
+.rating-big-number {
+  font-family: var(--font-serif);
+  font-size: 3.8rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+
+.rating-hero-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+}
+
+.star-hero {
+  font-size: 1.35rem;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.star-hero.filled {
+  color: #C9A45C;
+  text-shadow: 0 0 8px rgba(201, 164, 92, 0.5);
+}
+
+.rating-hero-count {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rating-distribution-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 42px 1fr 28px;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.dist-star-label {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.dist-bar-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  background: linear-gradient(90deg, #A9823E, #D6B66A);
+  height: 100%;
+  border-radius: 3px;
+  transition: width 400ms ease;
+}
+
+.dist-count-label {
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Guest Reviews Grid */
+.guest-reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.guest-review-card {
+  background: rgba(21, 19, 16, 0.85);
+  border: 1px solid rgba(201, 164, 92, 0.2);
+  border-radius: 3px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform var(--trans-fast), border-color var(--trans-fast);
+}
+
+.guest-review-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(201, 164, 92, 0.45);
+}
+
+.review-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.patron-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.patron-avatar-crest {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(201, 164, 92, 0.15);
+  border: 1px solid var(--gold-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.patron-name {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.patron-verified-tag {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--gold-primary);
+  letter-spacing: 0.04em;
+}
+
+.review-stars-wrap {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.star-mini {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.star-mini.filled {
+  color: #C9A45C;
+}
+
+.review-card-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0 0 1.25rem 0;
+  flex-grow: 1;
+}
+
+.review-card-footer {
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.review-date-text {
+  font-size: 0.78rem;
+  color: var(--text-dark);
+}
+
+/* Reviews Empty State */
+.reviews-empty-box {
+  text-align: center;
+  background: rgba(18, 17, 15, 0.75);
+  border: 1px dashed rgba(201, 164, 92, 0.3);
+  padding: 3.5rem 2rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .luxury-review-form-card,
+  .review-state-card {
+    padding: 1.75rem 1.25rem;
+  }
+  .dining-experience-banner {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .rating-overview-card {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  .rating-hero-block {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(201, 164, 92, 0.18);
+    padding-bottom: 1.25rem;
+  }
+  .guest-reviews-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-form-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .review-form-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

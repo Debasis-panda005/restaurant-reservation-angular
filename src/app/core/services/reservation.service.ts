@@ -26,6 +26,76 @@ export class ReservationService {
       time: '20:00',
       guests: 2,
       status: 'PENDING'
+    },
+    {
+      id: 1003,
+      customerId: 1,
+      restaurantId: 1,
+      tableId: 101,
+      date: '2026-09-20',
+      time: '19:00',
+      guests: 2,
+      status: 'COMPLETED'
+    },
+    {
+      id: 1004,
+      customerId: 1,
+      restaurantId: 2,
+      tableId: 202,
+      date: '2026-09-12',
+      time: '20:30',
+      guests: 2,
+      status: 'COMPLETED'
+    },
+    {
+      id: 1005,
+      customerId: 1,
+      restaurantId: 3,
+      tableId: 301,
+      date: '2026-09-15',
+      time: '18:30',
+      guests: 2,
+      status: 'CANCELLED'
+    },
+    {
+      id: 1006,
+      customerId: 1,
+      restaurantId: 3,
+      tableId: 302,
+      date: '2026-09-10',
+      time: '20:00',
+      guests: 2,
+      status: 'COMPLETED'
+    },
+    {
+      id: 1007,
+      customerId: 1,
+      restaurantId: 3,
+      tableId: 301,
+      date: '2026-09-02',
+      time: '19:30',
+      guests: 2,
+      status: 'COMPLETED'
+    },
+    {
+      id: 1008,
+      customerId: 1,
+      restaurantId: 2,
+      tableId: 201,
+      date: '2026-09-25',
+      time: '19:00',
+      guests: 4,
+      status: 'COMPLETED'
+    },
+    {
+      id: 1009,
+      customerId: 1,
+      restaurantId: 1,
+      tableId: 104,
+      date: '2026-09-18',
+      time: '20:00',
+      guests: 6,
+      status: 'COMPLETED'
     }
   ];
 
