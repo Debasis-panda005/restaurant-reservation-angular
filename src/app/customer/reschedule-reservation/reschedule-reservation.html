@@ -1,0 +1,438 @@
+<div class="page-container">
+
+  <!-- Cinematic Photographic Background Backdrop -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      [style.background-image]="'url(' + (restaurant?.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=80') + ')'"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
+  <!-- Luxury Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Table Concierge</span>
+        </div>
+      </div>
+
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury active" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Return Link -->
+    <div style="margin-bottom: 1.75rem;">
+      <a (click)="goToMyReservations()" class="return-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        <span>Return to My Reservations</span>
+      </a>
+    </div>
+
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage" class="feedback-banner banner-error">
+      <div class="banner-body">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <button class="banner-close" (click)="errorMessage = ''">✕</button>
+    </div>
+
+    <!-- 1. LOADING STATE -->
+    <div *ngIf="isLoading" class="state-card-centered">
+      <div class="gold-loading-spinner" aria-hidden="true"></div>
+      <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.95rem;">
+        Retrieving your reservation record...
+      </p>
+    </div>
+
+    <!-- 2. NOT FOUND STATE -->
+    <div *ngIf="!isLoading && notFound" class="state-card-centered error-card">
+      <div class="crest-icon-badge">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h2 class="state-title">Reservation Not Found</h2>
+      <p class="state-desc">
+        We could not locate the requested reservation in our registry. Please verify the reservation ID or consult your dining journal.
+      </p>
+      <button class="btn btn-gold" (click)="goToMyReservations()">
+        <span>Back to My Reservations</span>
+      </button>
+    </div>
+
+    <!-- 3. CANNOT RESCHEDULE STATE (Cancelled or Completed) -->
+    <div *ngIf="!isLoading && !notFound && cannotReschedule" class="state-card-centered error-card">
+      <div class="crest-icon-badge badge-burgundy">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      <h2 class="state-title">Reservation Cannot Be Rescheduled</h2>
+      <p class="state-desc">
+        {{ cannotRescheduleReason || 'Only active confirmed reservations may be modified.' }}
+      </p>
+      <button class="btn btn-outline-gold" (click)="goToMyReservations()">
+        <span>Back to My Reservations</span>
+      </button>
+    </div>
+
+    <!-- 4. SUCCESS STATE -->
+    <div *ngIf="!isLoading && rescheduleSuccess && updatedReservation" class="state-card-centered success-card">
+      <div class="crest-icon-badge badge-green">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#89D98D" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="16 9 10 15 7 12"></polyline>
+        </svg>
+      </div>
+      <span class="badge-status badge-confirmed" style="margin-bottom: 0.75rem;">CONFIRMED &bull; RESCHEDULED</span>
+      <h2 class="state-title">Reservation Rescheduled</h2>
+      <p class="state-desc">
+        Your dining reservation has been successfully updated. Your new table is reserved under the same booking reference.
+      </p>
+
+      <!-- Updated Pass Summary -->
+      <div class="updated-summary-box">
+        <div class="summary-line">
+          <span class="summary-label">Reservation ID</span>
+          <span class="summary-val text-gold">#RES-{{ updatedReservation.id }}</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-label">Restaurant</span>
+          <span class="summary-val">{{ restaurant?.name }}</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-label">New Date</span>
+          <span class="summary-val">{{ formatDisplayDate(updatedReservation.date) }}</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-label">New Time</span>
+          <span class="summary-val">{{ formatTo12h(updatedReservation.time) }}</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-label">New Table</span>
+          <span class="summary-val">{{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-label">Party</span>
+          <span class="summary-val">{{ updatedReservation.guests }} Guests</span>
+        </div>
+      </div>
+
+      <div class="success-actions">
+        <button class="btn btn-gold" (click)="goToQrPass()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>View QR Reservation Pass</span>
+        </button>
+        <button class="btn btn-secondary-dark" (click)="goToMyReservations()">
+          <span>My Reservations</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5. REVIEW CHANGES STEP -->
+    <div *ngIf="!isLoading && !notFound && !cannotReschedule && !rescheduleSuccess && isReviewStep && reservation && selectedTable" class="reschedule-shell">
+      <div class="review-panel">
+        <div class="review-header">
+          <span class="section-eyebrow">STEP 2 OF 2 &bull; FINAL CONFIRMATION</span>
+          <h2 class="panel-title">Review Changes</h2>
+          <p class="panel-subtitle">Please verify your updated dining itinerary before confirming.</p>
+        </div>
+
+        <div class="review-restaurant-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+            <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3m18 0V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3m17 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7"/>
+          </svg>
+          <strong>{{ restaurant?.name }}</strong>
+          <span class="text-gold">&bull; #RES-{{ reservation.id }}</span>
+        </div>
+
+        <div class="review-comparison-grid">
+          <!-- Previous Booking Column -->
+          <div class="comparison-column column-previous">
+            <div class="column-tag">Previous</div>
+            <div class="comp-row">
+              <span class="comp-label">Date</span>
+              <strong class="comp-val">{{ formatDisplayDate(reservation.date) }}</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Time</span>
+              <strong class="comp-val">{{ formatTo12h(reservation.time) }}</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Table</span>
+              <strong class="comp-val">{{ currentTable?.tableNumber || ('Table #' + reservation.tableId) }} ({{ currentTable?.seatingType || 'Standard' }})</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Guests</span>
+              <strong class="comp-val">{{ reservation.guests }}</strong>
+            </div>
+          </div>
+
+          <!-- New Booking Column -->
+          <div class="comparison-column column-new">
+            <div class="column-tag tag-new">New Selection</div>
+            <div class="comp-row">
+              <span class="comp-label">Date</span>
+              <strong class="comp-val text-gold">{{ formatDisplayDate(newDate) }}</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Time</span>
+              <strong class="comp-val text-gold">{{ formatTo12h(newTime) }}</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Table</span>
+              <strong class="comp-val text-gold">{{ selectedTable.tableNumber }} ({{ selectedTable.seatingType }})</strong>
+            </div>
+            <div class="comp-row">
+              <span class="comp-label">Guests</span>
+              <strong class="comp-val text-gold">{{ reservation.guests }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirm Action Buttons -->
+        <div class="review-footer-actions">
+          <button class="btn btn-gold btn-large" (click)="confirmReschedule()">
+            <span>Confirm Reschedule</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+          <button class="btn btn-secondary-dark" (click)="backToEditing()">
+            <span>Go Back</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. EDITING & SELECTION STEP -->
+    <div *ngIf="!isLoading && !notFound && !cannotReschedule && !rescheduleSuccess && !isReviewStep && reservation" class="reschedule-shell">
+
+      <!-- CURRENT RESERVATION SUMMARY -->
+      <section class="current-res-card">
+        <div class="current-res-header">
+          <span class="section-eyebrow">ACTIVE BOOKING</span>
+          <h2 class="current-res-title">Current Reservation</h2>
+        </div>
+
+        <div class="current-res-grid">
+          <div class="res-meta-item">
+            <span class="meta-label">Reservation ID</span>
+            <strong class="meta-value text-gold">#RES-{{ reservation.id }}</strong>
+          </div>
+          <div class="res-meta-item">
+            <span class="meta-label">Restaurant</span>
+            <strong class="meta-value">{{ restaurant?.name }}</strong>
+          </div>
+          <div class="res-meta-item">
+            <span class="meta-label">Current Date</span>
+            <strong class="meta-value">{{ formatDisplayDate(reservation.date) }}</strong>
+          </div>
+          <div class="res-meta-item">
+            <span class="meta-label">Current Time</span>
+            <strong class="meta-value">{{ formatTo12h(reservation.time) }}</strong>
+          </div>
+          <div class="res-meta-item">
+            <span class="meta-label">Current Table</span>
+            <strong class="meta-value">{{ currentTable?.tableNumber || ('Table #' + reservation.tableId) }} ({{ currentTable?.seatingType || 'INDOOR' }})</strong>
+          </div>
+          <div class="res-meta-item">
+            <span class="meta-label">Guests</span>
+            <strong class="meta-value">{{ reservation.guests }} Guests</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESCHEDULE FORM SECTION -->
+      <section class="reschedule-form-card">
+        <div class="form-section-head">
+          <span class="section-eyebrow">CHOOSE YOUR NEW DINING TIME</span>
+          <h1 class="form-main-heading">Reschedule Reservation</h1>
+          <p class="form-sub-heading">
+            Select your desired dining date, arrival time, and table preferences. Your booking ID and guest count will remain unchanged.
+          </p>
+        </div>
+
+        <!-- 1. DATE SELECTION -->
+        <div class="form-block">
+          <label class="form-label" for="rescheduleDate">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span>Select New Date</span>
+          </label>
+          <div class="date-input-wrap">
+            <input
+              id="rescheduleDate"
+              type="date"
+              class="editorial-date-input"
+              [(ngModel)]="newDate"
+              [min]="minDate"
+              (change)="onDateChange()"
+            />
+            <span class="input-helper-text">Reservations are available starting today and up to 90 days in advance.</span>
+          </div>
+        </div>
+
+        <!-- 2. TIME SELECTION -->
+        <div class="form-block">
+          <label class="form-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Select New Dining Time</span>
+          </label>
+          <div class="time-slots-grid">
+            <button
+              *ngFor="let slot of timeSlots"
+              type="button"
+              class="slot-pill"
+              [class.slot-selected]="newTime === slot"
+              [class.slot-unavailable]="!isTimeSlotAvailable(slot)"
+              [disabled]="!isTimeSlotAvailable(slot)"
+              (click)="selectTimeSlot(slot)"
+            >
+              <span class="slot-time">{{ slot }}</span>
+              <span class="slot-status-text">
+                {{ newTime === slot ? 'Selected' : (isTimeSlotAvailable(slot) ? 'Available' : 'Unavailable') }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. TABLE SELECTION -->
+        <div class="form-block">
+          <div class="table-block-head">
+            <label class="form-label" style="margin-bottom: 0;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <span>Select Available Table</span>
+            </label>
+            <span class="party-size-pill">Party Size: {{ reservation.guests }} Guests</span>
+          </div>
+
+          <div class="tables-grid">
+            <div
+              *ngFor="let table of tables"
+              class="table-card"
+              [class.table-selected]="selectedTable?.id === table.id"
+              [class.table-disabled]="!isTableSelectable(table)"
+              (click)="selectTable(table)"
+            >
+              <div class="table-card-top">
+                <span class="table-card-num">{{ table.tableNumber }}</span>
+                <span
+                  class="table-badge"
+                  [class.badge-avail]="isTableSelectable(table)"
+                  [class.badge-occ]="!isTableSelectable(table)"
+                >
+                  {{ isTableSelectable(table) ? 'Available' : (table.capacity < reservation.guests ? 'Insufficient Capacity' : 'Occupied') }}
+                </span>
+              </div>
+
+              <div class="table-card-meta">
+                <div class="meta-row">
+                  <span class="lbl">Capacity</span>
+                  <span class="val">{{ table.capacity }} Guests</span>
+                </div>
+                <div class="meta-row">
+                  <span class="lbl">Seating</span>
+                  <span class="val">{{ table.seatingType }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="table.capacity < reservation.guests" class="table-capacity-warning">
+                Requires at least {{ reservation.guests }} seats
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="form-footer-actions">
+          <button class="btn btn-gold btn-large" (click)="proceedToReview()">
+            <span>Review Changes</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+          <button class="btn btn-secondary-dark" (click)="goToMyReservations()">
+            <span>Cancel</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-shell">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <span class="footer-crest">✦</span>
+          <span class="footer-title">The Grand Concierge</span>
+          <p class="footer-motto">Boutique Table Reservations &amp; Queue Management</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Restaurant Reservation Collective. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+</div>

@@ -76,4 +76,28 @@ export class ReservationService {
     }
     return of(false);
   }
+
+  /**
+   * Update an existing reservation without altering its identity.
+   * Modifies date, time, tableId (and optionally guests/status).
+   */
+  updateReservation(id: number, updates: Partial<Reservation>): Observable<Reservation> {
+    const index = this.reservations.findIndex(r => r.id === id);
+    if (index === -1) {
+      throw new Error(`Reservation #${id} not found.`);
+    }
+
+    const current = this.reservations[index];
+    const updated: Reservation = {
+      ...current,
+      ...updates,
+      id: current.id,                 // Preserve reservation ID
+      customerId: current.customerId, // Preserve customer ID
+      restaurantId: current.restaurantId // Preserve restaurant ID
+    };
+
+    this.reservations[index] = updated;
+    return of(updated);
+  }
 }
+

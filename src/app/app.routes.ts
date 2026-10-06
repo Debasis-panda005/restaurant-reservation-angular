@@ -50,6 +50,13 @@ export const routes: Routes = [
     component: MyReservations
   },
   {
+    path: 'customer/reservations/:id/reschedule',
+    loadComponent: () =>
+      import('./customer/reschedule-reservation/reschedule-reservation').then(
+        (m) => m.default || m.RescheduleReservation
+      )
+  },
+  {
     path: 'customer/my-reservations',
     redirectTo: 'customer/reservations',
     pathMatch: 'full'

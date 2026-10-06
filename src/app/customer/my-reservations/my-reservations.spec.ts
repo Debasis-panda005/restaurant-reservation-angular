@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { MyReservations, EnrichedReservation } from './my-reservations';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
@@ -60,4 +60,14 @@ describe('MyReservations', () => {
     expect(reservationToCancel.status).toBe('CANCELLED');
     expect(component.notificationMessage).toContain('successfully cancelled');
   });
+
+  it('should navigate to reschedule page for a confirmed reservation', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    component.rescheduleBooking(1001);
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/customer/reservations', 1001, 'reschedule']);
+  });
 });
+

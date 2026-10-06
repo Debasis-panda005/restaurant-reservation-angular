@@ -121,6 +121,10 @@ export class MyReservations implements OnInit {
     this.router.navigate(['/customer/reservation-pass', reservationId]);
   }
 
+  rescheduleBooking(reservationId: number): void {
+    this.router.navigate(['/customer/reservations', reservationId, 'reschedule']);
+  }
+
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
