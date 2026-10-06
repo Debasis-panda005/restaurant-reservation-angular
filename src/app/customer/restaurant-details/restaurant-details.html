@@ -1,5 +1,14 @@
 <div class="page-container">
 
+  <!-- Cinematic Restaurant Photographic Background Layer (Fixed & Blurred, Dynamic Venue Image) -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      [style.background-image]="'url(' + (restaurant?.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=80') + ')'"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
   <!-- Luxury Full-Width Navbar -->
   <header class="luxury-navbar">
     <div class="nav-shell">
@@ -313,9 +322,20 @@
         </div>
       </div>
 
-      <div class="receipt-actions-row">
-        <button class="btn btn-secondary-dark" (click)="bookAnother()">Book Another</button>
-        <button class="btn btn-gold" (click)="goToMyReservations()">My Reservations</button>
+      <div class="receipt-actions-row" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-gold" (click)="viewQrPass(createdReservation.id)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>View QR Reservation Pass</span>
+        </button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <button class="btn btn-secondary-dark" (click)="bookAnother()">Book Another</button>
+          <button class="btn btn-outline-gold" (click)="goToMyReservations()">My Reservations</button>
+        </div>
       </div>
 
     </div>

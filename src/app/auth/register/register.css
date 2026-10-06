@@ -3,19 +3,25 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(ellipse at 50% 15%, #1A1713 0%, #0D0D0C 75%);
+  background: transparent !important;
   padding: 2.5rem 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .register-card {
   width: 100%;
   max-width: 480px;
-  background: #14120F;
-  border: 1px solid rgba(201, 164, 92, 0.28);
+  background: rgba(20, 18, 15, 0.86);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201, 164, 92, 0.32);
   border-radius: var(--radius-lg, 14px);
   padding: 2.5rem 2.25rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
   color: var(--text-primary, #F5EFE3);
+  position: relative;
+  z-index: 2;
 }
 
 .brand-crest {

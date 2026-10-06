@@ -117,6 +117,10 @@ export class MyReservations implements OnInit {
     }
   }
 
+  viewQrPass(reservationId: number): void {
+    this.router.navigate(['/customer/reservation-pass', reservationId]);
+  }
+
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }

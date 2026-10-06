@@ -1,5 +1,14 @@
 <div class="dashboard-page">
 
+  <!-- Cinematic Restaurant Photographic Background Layer (Fixed & Blurred) -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      style="background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=80');"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
   <!-- 1. Luxury Full-Width Navbar -->
   <header class="luxury-navbar">
     <div class="nav-shell">
@@ -56,15 +65,16 @@
     <section id="hero-section" class="editorial-hero">
       <div
         class="editorial-hero-bg"
-        style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1600&q=80');"
+        style="background-image: url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1800&q=80');"
       ></div>
       <div class="editorial-hero-overlay"></div>
 
       <div class="editorial-hero-content">
-        <span class="eyebrow-pill">
+        <span class="hero-cursive-eyebrow">Welcome To Our Restaurant</span>
+        <div class="eyebrow-pill" style="margin-bottom: 1.25rem;">
           <span>✦</span>
           <span>Experience the Art of Fine Dining</span>
-        </span>
+        </div>
         <h1 class="editorial-hero-title">
           An Exceptional Table <span>Awaits You</span>
         </h1>
@@ -85,6 +95,13 @@
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
           </button>
+        </div>
+
+        <!-- Reference-style Carousel Indicator Dots -->
+        <div class="hero-carousel-dots" aria-hidden="true">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
         </div>
       </div>
     </section>

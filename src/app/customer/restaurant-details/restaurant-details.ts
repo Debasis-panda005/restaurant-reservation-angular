@@ -169,6 +169,10 @@ export class RestaurantDetails implements OnInit {
     this.router.navigate(['/customer/reservations']);
   }
 
+  viewQrPass(reservationId: number): void {
+    this.router.navigate(['/customer/reservation-pass', reservationId]);
+  }
+
   bookAnother(): void {
     this.bookingSuccess = false;
     this.createdReservation = null;

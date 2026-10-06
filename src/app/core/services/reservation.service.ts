@@ -45,6 +45,14 @@ export class ReservationService {
   }
 
   /**
+   * Get a reservation by its ID.
+   */
+  getReservationById(id: number): Observable<Reservation | undefined> {
+    const reservation = this.reservations.find(r => r.id === id);
+    return of(reservation);
+  }
+
+  /**
    * Create and store a new reservation.
    */
   createReservation(reservationData: Omit<Reservation, 'id'>): Observable<Reservation> {

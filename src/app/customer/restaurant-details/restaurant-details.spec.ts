@@ -67,7 +67,7 @@ describe('RestaurantDetails', () => {
     };
 
     component.selectTable(availableTable);
-    component.bookingDate = '2026-10-05';
+    component.bookingDate = component.minDate || '2026-10-06';
     component.bookingTime = '19:30';
     component.guestsCount = 2;
 

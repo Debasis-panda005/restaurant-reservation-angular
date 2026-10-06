@@ -6,6 +6,7 @@ import { RestaurantList } from './customer/restaurant-list/restaurant-list';
 import { RestaurantDetails } from './customer/restaurant-details/restaurant-details';
 import { MyReservations } from './customer/my-reservations/my-reservations';
 import { QueueStatus } from './customer/queue-status/queue-status';
+import { QrReservationPass } from './customer/qr-reservation-pass/qr-reservation-pass';
 
 export const routes: Routes = [
   {
@@ -46,6 +47,10 @@ export const routes: Routes = [
     path: 'customer/my-reservations',
     redirectTo: 'customer/reservations',
     pathMatch: 'full'
+  },
+  {
+    path: 'customer/reservation-pass/:id',
+    component: QrReservationPass
   },
   {
     path: 'customer/queue',

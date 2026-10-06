@@ -1,0 +1,324 @@
+<div class="page-container">
+
+  <!-- Cinematic Restaurant Photographic Background Layer (Fixed & Blurred) -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      [style.background-image]="'url(' + (restaurant?.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=80') + ')'"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
+      </div>
+
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury active" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="downloadSuccess" class="luxury-banner">
+    <div class="banner-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>QR Reservation Pass image downloaded successfully.</span>
+    </div>
+    <button class="banner-close-btn" (click)="downloadSuccess = false">✕</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Return Link -->
+    <div style="margin-bottom: 2rem;">
+      <a routerLink="/customer/reservations" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        <span>Return to My Reservations</span>
+      </a>
+    </div>
+
+    <!-- 1. LOADING STATE (Only while fetching initial reservation data) -->
+    <div *ngIf="isLoading" class="pass-state-container">
+      <div class="pass-loading-spinner" aria-hidden="true"></div>
+      <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.95rem;">
+        Loading digital reservation pass...
+      </p>
+    </div>
+
+    <!-- 2. NOT FOUND STATE -->
+    <div *ngIf="!isLoading && notFound" class="pass-state-card">
+      <div class="pass-crest-badge">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h2 class="pass-error-title">Reservation Not Found</h2>
+      <p class="pass-error-desc">
+        We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.
+      </p>
+      <div class="pass-error-actions">
+        <button class="btn btn-gold" (click)="backToReservations()">
+          <span>Back to My Reservations</span>
+        </button>
+        <button class="btn btn-secondary-dark" (click)="goToRestaurants()">
+          <span>Explore Restaurants</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. CANCELLED RESERVATION STATE -->
+    <div *ngIf="!isLoading && !notFound && isCancelled" class="pass-state-card pass-cancelled-card">
+      <div class="pass-crest-badge pass-cancelled-crest">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      <span class="badge-status badge-cancelled" style="margin-bottom: 0.75rem;">CANCELLED RESERVATION</span>
+      <h2 class="pass-error-title">QR Pass Unavailable</h2>
+      <p class="pass-error-desc">
+        Cancelled reservations cannot be used for restaurant check-in. The security verification pass has been deactivated.
+      </p>
+
+      <div *ngIf="reservation" class="pass-summary-box">
+        <div class="summary-line">
+          <span>Reservation ID:</span>
+          <strong>#RES-{{ reservation.id }}</strong>
+        </div>
+        <div class="summary-line" *ngIf="restaurant">
+          <span>Venue:</span>
+          <strong>{{ restaurant.name }}</strong>
+        </div>
+        <div class="summary-line">
+          <span>Originally Scheduled:</span>
+          <strong>{{ reservation.date }} &bull; {{ reservation.time }}</strong>
+        </div>
+      </div>
+
+      <div class="pass-error-actions">
+        <button class="btn btn-gold" (click)="backToReservations()">
+          <span>Back to My Reservations</span>
+        </button>
+        <button class="btn btn-secondary-dark" (click)="goToRestaurants()">
+          <span>Reserve Another Table</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. ACTIVE CONFIRMED QR PASS (Renders reservation details immediately) -->
+    <div *ngIf="!isLoading && !notFound && !isCancelled && reservation" class="pass-ticket-wrapper">
+
+      <div class="pass-ticket-card">
+
+        <!-- Top Header Ribbon -->
+        <div class="pass-ticket-ribbon">
+          <span class="pass-ticket-eyebrow">CONCIERGE &bull; DIGITAL CHECK-IN PASS</span>
+        </div>
+
+        <!-- Venue & Crest Section -->
+        <div class="pass-venue-section">
+          <div class="pass-brand-crest">
+            <svg class="pass-crest-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+              <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+              <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <h1 class="pass-restaurant-name">{{ restaurant?.name || 'Exclusive Dining Venue' }}</h1>
+
+          <div *ngIf="restaurant?.location" class="pass-restaurant-loc">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>{{ restaurant?.location }}</span>
+          </div>
+
+          <div style="margin-top: 0.85rem;">
+            <span class="badge-status badge-confirmed">
+              <span>✓</span>
+              <span>RESERVATION CONFIRMED</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Perforated Gold Notch Divider -->
+        <div class="pass-perforated-divider">
+          <div class="notch notch-left"></div>
+          <div class="perforated-dots"></div>
+          <div class="notch notch-right"></div>
+        </div>
+
+        <!-- Reservation Particulars Grid -->
+        <div class="pass-details-grid">
+          <div class="pass-detail-cell">
+            <span class="detail-label">Reservation ID</span>
+            <strong class="detail-val text-gold">#RES-{{ reservation.id }}</strong>
+          </div>
+
+          <div class="pass-detail-cell">
+            <span class="detail-label">Patron Name</span>
+            <strong class="detail-val">{{ customerName }}</strong>
+          </div>
+
+          <div class="pass-detail-cell">
+            <span class="detail-label">Dining Date</span>
+            <strong class="detail-val">{{ reservation.date }}</strong>
+          </div>
+
+          <div class="pass-detail-cell">
+            <span class="detail-label">Reserved Time</span>
+            <strong class="detail-val">{{ reservation.time }}</strong>
+          </div>
+
+          <div class="pass-detail-cell">
+            <span class="detail-label">Party Size</span>
+            <strong class="detail-val">{{ reservation.guests }} Guests</strong>
+          </div>
+
+          <div class="pass-detail-cell">
+            <span class="detail-label">Allocated Seating</span>
+            <strong class="detail-val text-gold">
+              {{ table?.tableNumber ? ('Table ' + table?.tableNumber) : ('Table T-' + reservation.tableId) }}
+              <span *ngIf="table?.seatingType" style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">
+                ({{ table?.seatingType }})
+              </span>
+            </strong>
+          </div>
+        </div>
+
+        <!-- Perforated Gold Notch Divider -->
+        <div class="pass-perforated-divider">
+          <div class="notch notch-left"></div>
+          <div class="perforated-dots"></div>
+          <div class="notch notch-right"></div>
+        </div>
+
+        <!-- Scannable QR Code Stage -->
+        <div class="pass-qr-stage">
+          <div class="pass-qr-frame">
+            <!-- 1. Generating QR code spinner -->
+            <div *ngIf="isQrLoading" class="pass-qr-loading-box">
+              <div class="pass-loading-spinner pass-qr-spinner" aria-hidden="true"></div>
+              <span class="pass-qr-spinner-text">Generating Pass...</span>
+            </div>
+
+            <!-- 2. QR code generated and available -->
+            <img
+              *ngIf="!isQrLoading && !qrFailed && qrCodeUrl"
+              [src]="qrCodeUrl"
+              [alt]="'Check-in QR verification pass for reservation RES-' + reservation.id"
+              class="pass-qr-image"
+            />
+
+            <!-- 3. QR code failed or unavailable -->
+            <div *ngIf="!isQrLoading && (qrFailed || !qrCodeUrl)" class="pass-qr-failed-box">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span class="pass-qr-failed-title">QR Code Unavailable</span>
+              <button type="button" class="btn btn-gold pass-qr-retry-btn" (click)="retryQrGeneration()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Retry QR Generation</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pass-qr-instruction" *ngIf="!qrFailed">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <p>Show this QR code at the restaurant for check-in.</p>
+          </div>
+
+          <div class="pass-verification-tag">
+            <span>VERIFIED DIGITAL PASS</span>
+            <span>&bull;</span>
+            <span>RES-{{ reservation.id }}</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pass-actions-footer">
+          <button
+            class="btn btn-gold pass-action-btn"
+            (click)="downloadPass()"
+            [disabled]="!qrCodeUrl || isQrLoading"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Download QR Pass</span>
+          </button>
+
+          <button class="btn btn-secondary-dark pass-action-btn" (click)="backToReservations()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>Back to Reservations</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Digital Concierge Pass</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
+  </footer>
+
+</div>
