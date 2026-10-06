@@ -35,6 +35,13 @@ export const routes: Routes = [
     component: RestaurantList
   },
   {
+    path: 'customer/favorites',
+    loadComponent: () =>
+      import('./customer/favorites/favorites').then(
+        (m) => m.default || m.Favorites
+      )
+  },
+  {
     path: 'customer/restaurants/:id/menu',
     loadComponent: () =>
       import('./customer/restaurant-menu/restaurant-menu').then(

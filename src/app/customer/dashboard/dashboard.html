@@ -34,6 +34,7 @@
       <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
         <a class="nav-link-luxury active" (click)="scrollToSection('hero-section')">Dashboard</a>
         <a class="nav-link-luxury" (click)="goToRestaurants()">Restaurants</a>
+        <a class="nav-link-luxury" (click)="goToFavorites()">Favorites</a>
         <a class="nav-link-luxury" (click)="goToMyReservations()">My Reservations</a>
         <a class="nav-link-luxury" (click)="goToQueue()">Queue Status</a>
         <div class="nav-actions-luxury">
@@ -168,6 +169,25 @@
             </svg>
           </button>
         </ng-template>
+      </div>
+
+      <!-- Col 4: Saved Favorites -->
+      <div class="status-col">
+        <span class="status-col-tag">Saved Venues</span>
+        <div class="status-col-value text-gold">{{ favoritesCount }}</div>
+        <div class="status-col-label">Favorite Restaurants</div>
+        <div *ngIf="favoriteRestaurants.length > 0; else noFavoritesSnippet" class="status-col-hint">
+          Top: <strong>{{ favoriteRestaurants[0].name }}</strong>
+        </div>
+        <ng-template #noFavoritesSnippet>
+          <p class="status-col-hint">Save premier culinary destinations to your personal favorites list.</p>
+        </ng-template>
+        <button class="btn btn-secondary-dark status-col-btn" (click)="goToFavorites()">
+          <span>View Favorites</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
       </div>
     </section>
 
@@ -321,6 +341,50 @@
           </button>
         </div>
       </ng-template>
+    </section>
+
+    <!-- Curated Favorites Section (Feature 5) -->
+    <section *ngIf="favoriteRestaurants.length > 0" class="favorites-showcase-section" style="margin-bottom: 4rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="eyebrow-pill" style="margin-bottom: 0.4rem;">
+            <span>♥</span>
+            <span>Your Personal Collection</span>
+          </span>
+          <h2 style="font-family: var(--font-serif); font-size: 1.85rem; color: var(--text-primary); margin: 0;">
+            Curated Favorites
+          </h2>
+        </div>
+        <button class="btn btn-outline-gold" (click)="goToFavorites()">
+          <span>View All Saved ({{ favoritesCount }})</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="editorial-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+        <div *ngFor="let fav of favoriteRestaurants" class="venue-editorial-card" (click)="onReserveClick(fav)" style="cursor: pointer;">
+          <div class="card-img-wrap">
+            <img [src]="fav.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'" [alt]="fav.name" />
+            <div class="card-img-overlay"></div>
+            <span class="card-badge-cuisine">{{ fav.cuisine }}</span>
+            <div class="card-badge-rating">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span>{{ fav.rating.toFixed(1) }}</span>
+            </div>
+          </div>
+          <div class="card-editorial-body">
+            <h3 class="card-venue-name">{{ fav.name }}</h3>
+            <p class="card-venue-location">{{ fav.location }}</p>
+            <div class="card-editorial-footer">
+              <span class="card-view-menu-link">Reserve Table &rarr;</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 5. "A Journey of Taste & Tradition" Hospitality Showcase (Inspired by Reference) -->

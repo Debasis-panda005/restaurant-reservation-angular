@@ -6,6 +6,7 @@ import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
 import { QueueService } from '../../core/services/queue.service';
 import { AuthService } from '../../core/services/auth.service';
+import { FavoriteService } from '../../core/services/favorite.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { Reservation } from '../../core/models/reservation.model';
@@ -38,6 +39,8 @@ export class Dashboard implements OnInit {
   upcomingReservationsCount: number = 0;
   upcomingReservations: Reservation[] = [];
   currentQueueTicket: QueueTicket | null = null;
+  favoritesCount: number = 0;
+  favoriteRestaurants: Restaurant[] = [];
 
   // View Tables Modal
   selectedRestaurantForTables: Restaurant | null = null;
@@ -54,6 +57,7 @@ export class Dashboard implements OnInit {
     private restaurantService: RestaurantService,
     private reservationService: ReservationService,
     private queueService: QueueService,
+    private favoriteService: FavoriteService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -119,6 +123,45 @@ export class Dashboard implements OnInit {
         this.currentQueueTicket = ticket || null;
       },
     });
+
+    // Favorites count and list
+    this.favoriteService.getFavoriteCount(customerId).subscribe({
+      next: (count) => {
+        this.favoritesCount = count;
+      },
+    });
+
+    this.favoriteService.getFavoritesByCustomerId(customerId).subscribe({
+      next: (favorites) => {
+        const topFavs = favorites.slice(0, 3);
+        if (topFavs.length === 0) {
+          this.favoriteRestaurants = [];
+          return;
+        }
+
+        const loaded: Restaurant[] = [];
+        let count = 0;
+        topFavs.forEach((fav) => {
+          this.restaurantService.getRestaurantById(fav.restaurantId).subscribe({
+            next: (rest) => {
+              count++;
+              if (rest) {
+                loaded.push(rest);
+              }
+              if (count === topFavs.length) {
+                this.favoriteRestaurants = loaded;
+              }
+            },
+            error: () => {
+              count++;
+              if (count === topFavs.length) {
+                this.favoriteRestaurants = loaded;
+              }
+            },
+          });
+        });
+      },
+    });
   }
 
   filterRestaurants(): void {
@@ -173,6 +216,10 @@ export class Dashboard implements OnInit {
 
   goToMyReservations(): void {
     this.router.navigate(['/customer/reservations']);
+  }
+
+  goToFavorites(): void {
+    this.router.navigate(['/customer/favorites']);
   }
 
   goToQueue(): void {

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
 import { ReviewService } from '../../core/services/review.service';
+import { FavoriteService } from '../../core/services/favorite.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
@@ -22,6 +23,9 @@ export class RestaurantDetails implements OnInit {
   restaurant: Restaurant | null = null;
   tables: Table[] = [];
   selectedTable: Table | null = null;
+
+  // Favorites State
+  isFavoriteRestaurant: boolean = false;
 
   // Reviews & Rating State
   reviews: Review[] = [];
@@ -60,6 +64,7 @@ export class RestaurantDetails implements OnInit {
     private restaurantService: RestaurantService,
     private reservationService: ReservationService,
     private reviewService: ReviewService,
+    private favoriteService: FavoriteService,
     private authService: AuthService
   ) {}
 
@@ -93,6 +98,39 @@ export class RestaurantDetails implements OnInit {
     });
 
     this.loadReviewsAndRatings(restaurantId);
+    this.checkFavoriteStatus(restaurantId);
+  }
+
+  checkFavoriteStatus(restaurantId: number): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+
+    this.favoriteService.isFavorite(customerId, restaurantId).subscribe({
+      next: (isFav) => {
+        this.isFavoriteRestaurant = isFav;
+      },
+    });
+  }
+
+  toggleFavorite(): void {
+    if (!this.restaurant) return;
+
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    const restaurantId = this.restaurant.id;
+
+    // Optimistic toggle
+    this.isFavoriteRestaurant = !this.isFavoriteRestaurant;
+
+    this.favoriteService.toggleFavorite(customerId, restaurantId).subscribe({
+      next: (isNowFav) => {
+        this.isFavoriteRestaurant = isNowFav;
+      },
+      error: () => {
+        // Rollback on error
+        this.isFavoriteRestaurant = !this.isFavoriteRestaurant;
+      },
+    });
   }
 
   loadReviewsAndRatings(restaurantId: number): void {

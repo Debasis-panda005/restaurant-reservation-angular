@@ -1,10 +1,10 @@
 <div class="page-container">
 
-  <!-- Cinematic Restaurant Photographic Background Layer (Fixed & Blurred) -->
+  <!-- Cinematic Background Layer (Fixed & Blurred Table Setting) -->
   <div class="cinematic-backdrop" aria-hidden="true">
     <div
       class="cinematic-backdrop-img"
-      style="background-image: url('https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=2000&q=80');"
+      style="background-image: url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=2000&q=80');"
     ></div>
     <div class="cinematic-backdrop-overlay"></div>
   </div>
@@ -33,8 +33,8 @@
 
       <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
         <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
-        <a class="nav-link-luxury active" routerLink="/customer/restaurants">Restaurants</a>
-        <a class="nav-link-luxury" routerLink="/customer/favorites">Favorites</a>
+        <a class="nav-link-luxury" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury active" routerLink="/customer/favorites">Favorites</a>
         <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
         <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
         <div class="nav-actions-luxury">
@@ -49,59 +49,49 @@
     </div>
   </header>
 
+  <!-- Feedback Banner (Toast) -->
+  <div *ngIf="feedbackMessage" class="luxury-banner" style="position: sticky; top: 72px; z-index: 99;">
+    <div class="banner-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <span>{{ feedbackMessage }}</span>
+    </div>
+    <button class="banner-close-btn" (click)="feedbackMessage = ''">✕</button>
+  </div>
+
   <!-- Main Content -->
   <main class="main-content">
 
     <!-- Header Section -->
-    <div class="directory-hero-banner">
-      <div class="directory-titles">
-        <span class="eyebrow-pill">
+    <div class="journal-hero-banner" style="margin-bottom: 2.5rem;">
+      <div>
+        <span class="eyebrow-pill" style="margin-bottom: 0.4rem;">
           <span>✦</span>
-          <span>Curated Venues &bull; Dining Collection</span>
+          <span>Private Table Registry &bull; Saved Venues</span>
         </span>
-        <h1>Distinguished Dining Destinations</h1>
-        <p>
-          Explore exceptional restaurants, discover distinctive cuisines, and reserve your preferred table with real-time seating allocation.
+        <h1 style="font-size: 2.2rem; color: var(--text-primary); margin-bottom: 0.35rem;">Your Favorite Restaurants</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 600px; margin: 0;">
+          Your personal collection of places worth returning to.
         </p>
       </div>
 
-      <!-- Search Box -->
-      <div class="directory-search-box">
-        <svg class="directory-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchChange()"
-          placeholder="Search by restaurant, cuisine, or city..."
-          class="directory-search-input"
-        />
-        <button *ngIf="searchQuery" class="directory-clear-btn" (click)="searchQuery = ''; onSearchChange()">✕</button>
+      <div>
+        <a routerLink="/customer/restaurants" class="btn btn-outline-gold" style="font-size: 0.82rem; padding: 0.55rem 1.25rem;">
+          <span>+ Explore More Venues</span>
+        </a>
       </div>
     </div>
 
-    <!-- Cuisine Filter Bar -->
-    <div class="editorial-filter-bar">
-      <button
-        *ngFor="let cuisine of cuisines"
-        type="button"
-        class="editorial-filter-pill"
-        [class.active]="selectedCuisine === cuisine"
-        (click)="onCuisineChange(cuisine)"
-      >
-        {{ cuisine === 'ALL' ? 'All Collections' : cuisine }}
-      </button>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" style="text-align: center; padding: 5rem 2rem;">
+      <div class="gold-loading-spinner" style="margin: 0 auto 1.5rem auto;"></div>
+      <p style="color: var(--gold-light); font-size: 1rem; letter-spacing: 0.04em;">Retrieving your saved dining collection...</p>
     </div>
 
-    <!-- Results Counter -->
-    <div style="font-size: 0.84rem; color: var(--text-dark); margin-bottom: 2rem;">
-      Presenting <strong style="color: var(--gold-light);">{{ filteredRestaurants.length }}</strong> curated dining establishments
-    </div>
-
-    <!-- Directory Cards Grid -->
-    <div *ngIf="filteredRestaurants.length > 0; else noResults" class="directory-cards-grid">
-      <div *ngFor="let r of filteredRestaurants" class="directory-restaurant-card">
+    <!-- Favorite Restaurants Grid -->
+    <div *ngIf="!isLoading && favoriteRestaurants.length > 0" class="directory-cards-grid">
+      <div *ngFor="let r of favoriteRestaurants" class="directory-restaurant-card">
 
         <!-- Prominent Image Box -->
         <div class="directory-card-img-box">
@@ -110,23 +100,24 @@
             [alt]="r.name"
           />
           <span class="masonry-tag-float">{{ r.cuisine }}</span>
+
+          <!-- Rating Float -->
           <div class="masonry-rating-float">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            <span>{{ r.rating.toFixed(1) }}</span>
+            <span>{{ (ratings[r.id]?.rating || r.rating).toFixed(1) }}</span>
           </div>
 
-          <!-- Floating Favorite Heart Button -->
+          <!-- Floating Favorite Heart Button (Filled Gold) -->
           <button
             type="button"
-            class="card-favorite-btn"
-            [class.is-favorited]="isFavorite(r.id)"
-            (click)="toggleFavorite(r.id, $event)"
-            [attr.aria-label]="isFavorite(r.id) ? 'Remove restaurant from favorites' : 'Add restaurant to favorites'"
-            [attr.title]="isFavorite(r.id) ? 'Remove from favorites' : 'Save to favorites'"
+            class="card-favorite-btn is-favorited"
+            (click)="removeFavorite(r.id, $event)"
+            aria-label="Remove restaurant from favorites"
+            title="Remove from favorites"
           >
-            <svg class="heart-svg" viewBox="0 0 24 24" [attr.fill]="isFavorite(r.id) ? '#C9A45C' : 'none'" stroke="#C9A45C" stroke-width="2">
+            <svg class="heart-svg" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </button>
@@ -135,6 +126,7 @@
         <!-- Card Body -->
         <div class="directory-card-body">
           <h2 class="directory-card-title">{{ r.name }}</h2>
+
           <div class="directory-card-location">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
@@ -155,12 +147,20 @@
             </ng-template>
           </div>
 
-          <!-- Actions -->
+          <!-- Card Actions -->
           <div class="directory-card-actions">
-            <button class="btn btn-secondary-dark" (click)="viewDetails(r.id)">
-              View Details
+            <button
+              class="btn btn-outline-gold"
+              style="font-size: 0.76rem; padding: 0.45rem 0.85rem;"
+              (click)="viewRestaurant(r.id)"
+            >
+              View Restaurant
             </button>
-            <button class="btn btn-gold" (click)="viewDetails(r.id)">
+            <button
+              class="btn btn-gold"
+              style="font-size: 0.76rem; padding: 0.45rem 1rem;"
+              (click)="reserveTable(r.id, $event)"
+            >
               Reserve Table
             </button>
           </div>
@@ -169,16 +169,31 @@
       </div>
     </div>
 
-    <!-- No Results State -->
-    <ng-template #noResults>
-      <div style="text-align: center; background: #151310; border: 1px dashed rgba(201, 164, 92, 0.3); padding: 4rem 2rem; margin: 2rem 0;">
-        <h3 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.5rem;">No matching dining venues found</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">Try refining your search keyword or selecting "All Collections".</p>
-        <button class="btn btn-outline-gold" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
-          Reset Search Filters
-        </button>
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && favoriteRestaurants.length === 0" class="favorites-empty-card">
+      <div class="favorites-crest-icon">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
       </div>
-    </ng-template>
+
+      <span class="eyebrow-pill" style="margin-bottom: 0.75rem;">
+        <span>✦</span>
+        <span>PRIVATE REGISTRY</span>
+      </span>
+
+      <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem;">Your Favorites Are Waiting</h2>
+      <p style="color: var(--text-muted); font-size: 0.98rem; max-width: 480px; margin: 0 auto 2rem auto; line-height: 1.6;">
+        Save restaurants you love and they will appear here.
+      </p>
+
+      <button class="btn btn-gold" (click)="exploreRestaurants()" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <span>Explore Restaurants</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
 
   </main>
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { FavoriteService } from '../../core/services/favorite.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 
@@ -21,15 +22,66 @@ export class RestaurantList implements OnInit {
   cuisines: string[] = ['ALL'];
   tableAvailability: { [restaurantId: number]: { total: number; available: number } } = {};
   isMobileMenuOpen: boolean = false;
+  favoriteRestaurantIds = new Set<number>();
 
   constructor(
     private restaurantService: RestaurantService,
+    private favoriteService: FavoriteService,
     private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadRestaurants();
+    this.loadFavorites();
+  }
+
+  loadFavorites(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+
+    this.favoriteService.getFavoritesByCustomerId(customerId).subscribe({
+      next: (favorites) => {
+        this.favoriteRestaurantIds = new Set(favorites.map((f) => f.restaurantId));
+      },
+    });
+  }
+
+  isFavorite(restaurantId: number): boolean {
+    return this.favoriteRestaurantIds.has(restaurantId);
+  }
+
+  toggleFavorite(restaurantId: number, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+
+    // Optimistic toggle
+    if (this.favoriteRestaurantIds.has(restaurantId)) {
+      this.favoriteRestaurantIds.delete(restaurantId);
+    } else {
+      this.favoriteRestaurantIds.add(restaurantId);
+    }
+
+    this.favoriteService.toggleFavorite(customerId, restaurantId).subscribe({
+      next: (isNowFav) => {
+        if (isNowFav) {
+          this.favoriteRestaurantIds.add(restaurantId);
+        } else {
+          this.favoriteRestaurantIds.delete(restaurantId);
+        }
+      },
+      error: () => {
+        // Rollback
+        if (this.favoriteRestaurantIds.has(restaurantId)) {
+          this.favoriteRestaurantIds.delete(restaurantId);
+        } else {
+          this.favoriteRestaurantIds.add(restaurantId);
+        }
+      },
+    });
   }
 
   loadRestaurants(): void {

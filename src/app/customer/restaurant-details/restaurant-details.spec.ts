@@ -5,6 +5,7 @@ import { RestaurantDetails } from './restaurant-details';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
 import { ReviewService } from '../../core/services/review.service';
+import { FavoriteService } from '../../core/services/favorite.service';
 import { Table } from '../../core/models/table.model';
 
 describe('RestaurantDetails', () => {
@@ -13,6 +14,7 @@ describe('RestaurantDetails', () => {
   let reservationService: ReservationService;
   let restaurantService: RestaurantService;
   let reviewService: ReviewService;
+  let favoriteService: FavoriteService;
   let router: Router;
 
   beforeEach(async () => {
@@ -23,6 +25,7 @@ describe('RestaurantDetails', () => {
         RestaurantService,
         ReservationService,
         ReviewService,
+        FavoriteService,
         {
           provide: ActivatedRoute,
           useValue: {
@@ -176,5 +179,23 @@ describe('RestaurantDetails', () => {
 
     component.viewMenu();
     expect(navSpy).toHaveBeenCalledWith(['/customer/restaurants', 1, 'menu']);
+  });
+
+  it('should toggle favorite status in restaurant details', () => {
+    component.restaurant = {
+      id: 1,
+      name: 'Spice Symphony Bistro',
+      location: 'Bhubaneswar, Odisha',
+      cuisine: 'North Indian & Mughlai',
+      description: 'Authentic royal curries',
+      rating: 4.8,
+      tagline: 'Imperial Flavors',
+      imageUrl: '',
+    };
+    component.checkFavoriteStatus(1);
+
+    const initialFavorite = component.isFavoriteRestaurant;
+    component.toggleFavorite();
+    expect(component.isFavoriteRestaurant).toBe(!initialFavorite);
   });
 });
