@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -7,6 +7,7 @@ import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -22,6 +23,7 @@ export class RescheduleReservation implements OnInit {
   currentTable: Table | null = null;
   tables: Table[] = [];
   existingReservations: Reservation[] = [];
+  unreadNotificationsCount: number = 0;
 
   // Available Time Slots
   readonly timeSlots: string[] = [
@@ -61,7 +63,8 @@ export class RescheduleReservation implements OnInit {
     private reservationService: ReservationService,
     private restaurantService: RestaurantService,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -72,8 +75,20 @@ export class RescheduleReservation implements OnInit {
     const dd = String(today.getDate()).padStart(2, '0');
     this.minDate = `${yyyy}-${mm}-${dd}`;
 
+    this.loadUnreadCount();
+
     const idParam = this.route.snapshot.paramMap.get('id');
     this.handleRouteId(idParam);
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   handleRouteId(idParam: string | null | undefined): void {

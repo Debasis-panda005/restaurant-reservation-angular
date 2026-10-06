@@ -7,10 +7,12 @@ import { ReservationService } from '../../core/services/reservation.service';
 import { QueueService } from '../../core/services/queue.service';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoriteService } from '../../core/services/favorite.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { Reservation } from '../../core/models/reservation.model';
 import { QueueTicket } from '../../core/models/queue-ticket.model';
+import { Notification } from '../../core/models/notification.model';
 import { User } from '../../core/models/user.model';
 
 @Component({
@@ -41,6 +43,8 @@ export class Dashboard implements OnInit {
   currentQueueTicket: QueueTicket | null = null;
   favoritesCount: number = 0;
   favoriteRestaurants: Restaurant[] = [];
+  unreadNotificationsCount: number = 0;
+  latestNotifications: Notification[] = [];
 
   // View Tables Modal
   selectedRestaurantForTables: Restaurant | null = null;
@@ -58,6 +62,7 @@ export class Dashboard implements OnInit {
     private reservationService: ReservationService,
     private queueService: QueueService,
     private favoriteService: FavoriteService,
+    private notificationService: NotificationService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -162,6 +167,19 @@ export class Dashboard implements OnInit {
         });
       },
     });
+
+    // Unread notifications count and latest updates
+    this.notificationService.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
+
+    this.notificationService.getNotificationsByCustomerId(customerId).subscribe({
+      next: (notifs) => {
+        this.latestNotifications = notifs.slice(0, 3);
+      },
+    });
   }
 
   filterRestaurants(): void {
@@ -220,6 +238,10 @@ export class Dashboard implements OnInit {
 
   goToFavorites(): void {
     this.router.navigate(['/customer/favorites']);
+  }
+
+  goToNotifications(): void {
+    this.router.navigate(['/customer/notifications']);
   }
 
   goToQueue(): void {

@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReviewService } from '../../core/services/review.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { Restaurant } from '../../core/models/restaurant.model';
@@ -29,6 +30,7 @@ export class RestaurantReview implements OnInit {
   reservationId: number = 0;
   reservation: Reservation | null = null;
   restaurant: Restaurant | null = null;
+  unreadNotificationsCount: number = 0;
 
   isLoading: boolean = true;
   errorState: ReviewErrorState = 'NONE';
@@ -61,10 +63,12 @@ export class RestaurantReview implements OnInit {
     private reservationService: ReservationService,
     private restaurantService: RestaurantService,
     private reviewService: ReviewService,
-    private authService: AuthService
+    private authService: AuthService,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
+    this.loadUnreadCount();
     this.route.paramMap.subscribe((params) => {
       const idParam = params.get('id');
       const id = idParam ? Number(idParam) : NaN;
@@ -77,6 +81,16 @@ export class RestaurantReview implements OnInit {
 
       this.reservationId = id;
       this.loadReservationAndCheckEligibility(id);
+    });
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
     });
   }
 

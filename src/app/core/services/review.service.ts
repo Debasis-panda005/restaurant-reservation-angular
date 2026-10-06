@@ -1,11 +1,13 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { Review } from '../models/review.model';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReviewService {
+  constructor(@Optional() private notificationService?: NotificationService) {}
   private reviews: Review[] = [
     // Restaurant 1: Spice Symphony Bistro
     {
@@ -223,6 +225,21 @@ export class ReviewService {
     };
 
     this.reviews.push(newReview);
+
+    if (this.notificationService) {
+      this.notificationService.addNotification({
+        id: 0,
+        customerId: newReview.customerId,
+        type: 'REVIEW_SUBMITTED',
+        title: 'Review Submitted',
+        message: 'Thank you for sharing your dining experience.',
+        reservationId: newReview.reservationId,
+        restaurantId: newReview.restaurantId,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        read: false
+      }).subscribe();
+    }
+
     return of(newReview);
   }
 

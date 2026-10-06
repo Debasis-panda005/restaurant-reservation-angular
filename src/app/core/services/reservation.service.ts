@@ -1,11 +1,13 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { Reservation } from '../models/reservation.model';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReservationService {
+  constructor(@Optional() private notificationService?: NotificationService) {}
   private reservations: Reservation[] = [
     {
       id: 1001,
@@ -132,6 +134,21 @@ export class ReservationService {
     };
 
     this.reservations.push(newReservation);
+
+    if (this.notificationService) {
+      this.notificationService.addNotification({
+        id: 0,
+        customerId: newReservation.customerId,
+        type: 'RESERVATION_CONFIRMED',
+        title: 'Reservation Confirmed',
+        message: `Your reservation #${newReservation.id} is confirmed for ${newReservation.date} at ${newReservation.time}.`,
+        reservationId: newReservation.id,
+        restaurantId: newReservation.restaurantId,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        read: false
+      }).subscribe();
+    }
+
     return of(newReservation);
   }
 
@@ -142,6 +159,21 @@ export class ReservationService {
     const reservation = this.reservations.find(r => r.id === id);
     if (reservation) {
       reservation.status = 'CANCELLED';
+
+      if (this.notificationService) {
+        this.notificationService.addNotification({
+          id: 0,
+          customerId: reservation.customerId,
+          type: 'RESERVATION_CANCELLED',
+          title: 'Reservation Cancelled',
+          message: `Your reservation #${reservation.id} has been cancelled.`,
+          reservationId: reservation.id,
+          restaurantId: reservation.restaurantId,
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          read: false
+        }).subscribe();
+      }
+
       return of(true);
     }
     return of(false);
@@ -167,6 +199,21 @@ export class ReservationService {
     };
 
     this.reservations[index] = updated;
+
+    if (this.notificationService) {
+      this.notificationService.addNotification({
+        id: 0,
+        customerId: updated.customerId,
+        type: 'RESERVATION_RESCHEDULED',
+        title: 'Reservation Rescheduled',
+        message: `Your reservation #${updated.id} has been successfully rescheduled to ${updated.date} at ${updated.time}.`,
+        reservationId: updated.id,
+        restaurantId: updated.restaurantId,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        read: false
+      }).subscribe();
+    }
+
     return of(updated);
   }
 }

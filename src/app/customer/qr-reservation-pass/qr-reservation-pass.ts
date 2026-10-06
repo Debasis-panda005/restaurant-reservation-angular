@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -7,6 +7,7 @@ import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ReservationQrService } from '../../core/services/reservation-qr.service';
 
@@ -23,6 +24,7 @@ export class QrReservationPass implements OnInit, OnDestroy {
   table: Table | null = null;
   customerName: string = 'Valued Patron';
   qrCodeUrl: string = '';
+  unreadNotificationsCount: number = 0;
 
   // Decoupled loading and error states
   isLoading: boolean = true;       // Loading initial reservation details
@@ -43,10 +45,12 @@ export class QrReservationPass implements OnInit, OnDestroy {
     private restaurantService: RestaurantService,
     private authService: AuthService,
     private reservationQrService: ReservationQrService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   async ngOnInit(): Promise<void> {
+    this.loadUnreadCount();
     if (this.route.paramMap) {
       this.routeSub = this.route.paramMap.subscribe(async (params) => {
         const idParam = params.get('id');
@@ -62,6 +66,16 @@ export class QrReservationPass implements OnInit, OnDestroy {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   private async handleParamId(idParam: string | null | undefined): Promise<void> {

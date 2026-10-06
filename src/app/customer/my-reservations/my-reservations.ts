@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ReservationService } from '../../core/services/reservation.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReviewService } from '../../core/services/review.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { Restaurant } from '../../core/models/restaurant.model';
@@ -31,6 +32,7 @@ export class MyReservations implements OnInit {
   notificationMessage: string = '';
   isMobileMenuOpen: boolean = false;
   reviewedReservationIds = new Set<number>();
+  unreadNotificationsCount: number = 0;
 
   private restaurantsMap = new Map<number, Restaurant>();
   private tablesMap = new Map<number, Table>();
@@ -40,11 +42,23 @@ export class MyReservations implements OnInit {
     private restaurantService: RestaurantService,
     private reviewService: ReviewService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
     this.loadData();
+    this.loadUnreadCount();
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   loadData(): void {

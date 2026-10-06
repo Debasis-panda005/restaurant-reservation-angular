@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReviewService } from '../../core/services/review.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 
@@ -18,6 +19,7 @@ export class Favorites implements OnInit {
   favoriteRestaurants: Restaurant[] = [];
   tableAvailability: { [restaurantId: number]: { total: number; available: number } } = {};
   ratings: { [restaurantId: number]: { rating: number; count: number } } = {};
+  unreadNotificationsCount: number = 0;
 
   isLoading: boolean = true;
   feedbackMessage: string = '';
@@ -30,11 +32,23 @@ export class Favorites implements OnInit {
     private restaurantService: RestaurantService,
     private reviewService: ReviewService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
     this.loadFavorites();
+    this.loadUnreadCount();
+  }
+
+  loadUnreadCount(): void {
+    const currentUser = this.authService.getCurrentUser();
+    const customerId = currentUser ? currentUser.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   loadFavorites(): void {

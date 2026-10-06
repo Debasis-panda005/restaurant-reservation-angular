@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
 import { ReviewService } from '../../core/services/review.service';
 import { FavoriteService } from '../../core/services/favorite.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
@@ -26,6 +27,7 @@ export class RestaurantDetails implements OnInit {
 
   // Favorites State
   isFavoriteRestaurant: boolean = false;
+  unreadNotificationsCount: number = 0;
 
   // Reviews & Rating State
   reviews: Review[] = [];
@@ -65,7 +67,8 @@ export class RestaurantDetails implements OnInit {
     private reservationService: ReservationService,
     private reviewService: ReviewService,
     private favoriteService: FavoriteService,
-    private authService: AuthService
+    private authService: AuthService,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -77,10 +80,22 @@ export class RestaurantDetails implements OnInit {
     this.bookingDate = `${yyyy}-${mm}-${dd}`;
     this.minDate = this.bookingDate;
 
+    this.loadUnreadCount();
+
     this.route.paramMap.subscribe((params) => {
       const idParam = params.get('id');
       const restaurantId = idParam ? Number(idParam) : 1;
       this.loadRestaurantDetails(restaurantId);
+    });
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
     });
   }
 

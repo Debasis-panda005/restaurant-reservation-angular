@@ -1,11 +1,13 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { QueueTicket } from '../models/queue-ticket.model';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class QueueService {
+  constructor(@Optional() private notificationService?: NotificationService) {}
   private queueTickets: QueueTicket[] = [
     {
       id: 501,
@@ -41,12 +43,51 @@ export class QueueService {
         if (ticket.peopleAhead > 1) {
           ticket.peopleAhead -= 1;
           ticket.estimatedWaitMinutes = Math.max(3, ticket.peopleAhead * 5 + 3);
+
+          if (this.notificationService) {
+            this.notificationService.addNotification({
+              id: 0,
+              customerId: ticket.customerId,
+              type: 'QUEUE_UPDATE',
+              title: 'Queue Status Updated',
+              message: `You are now #${ticket.peopleAhead + 1} in the queue at the restaurant.`,
+              restaurantId: ticket.restaurantId,
+              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+              read: false
+            }).subscribe();
+          }
         } else if (ticket.peopleAhead === 1) {
           ticket.peopleAhead = 0;
           ticket.estimatedWaitMinutes = 2;
+
+          if (this.notificationService) {
+            this.notificationService.addNotification({
+              id: 0,
+              customerId: ticket.customerId,
+              type: 'QUEUE_UPDATE',
+              title: 'Queue Status Updated',
+              message: 'You are next in line! Please stay near the entrance.',
+              restaurantId: ticket.restaurantId,
+              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+              read: false
+            }).subscribe();
+          }
         } else if (ticket.peopleAhead === 0) {
           ticket.status = 'SERVING';
           ticket.estimatedWaitMinutes = 0;
+
+          if (this.notificationService) {
+            this.notificationService.addNotification({
+              id: 0,
+              customerId: ticket.customerId,
+              type: 'TABLE_READY',
+              title: 'Your Table Is Ready',
+              message: 'Your table is ready. Please proceed to the restaurant concierge.',
+              restaurantId: ticket.restaurantId,
+              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+              read: false
+            }).subscribe();
+          }
         }
       } else if (ticket.status === 'SERVING') {
         ticket.status = 'COMPLETED';
@@ -83,6 +124,20 @@ export class QueueService {
     };
 
     this.queueTickets.push(newTicket);
+
+    if (this.notificationService) {
+      this.notificationService.addNotification({
+        id: 0,
+        customerId: newTicket.customerId,
+        type: 'QUEUE_UPDATE',
+        title: 'Queue Status Updated',
+        message: `You have joined the queue. Your priority pass token is #${newTicket.ticketNumber}.`,
+        restaurantId: newTicket.restaurantId,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        read: false
+      }).subscribe();
+    }
+
     return of(newTicket);
   }
 

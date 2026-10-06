@@ -7,6 +7,7 @@ import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
 import { QueueService } from '../../core/services/queue.service';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 describe('Dashboard', () => {
   let component: Dashboard;
@@ -22,6 +23,7 @@ describe('Dashboard', () => {
         ReservationService,
         QueueService,
         FavoriteService,
+        NotificationService,
         AuthService,
       ],
     }).compileComponents();
@@ -40,9 +42,20 @@ describe('Dashboard', () => {
     expect(component.favoritesCount).toBeGreaterThanOrEqual(0);
   });
 
+  it('should load notifications on summary load', () => {
+    expect(component.unreadNotificationsCount).toBeGreaterThanOrEqual(0);
+    expect(component.latestNotifications).toBeDefined();
+  });
+
   it('should navigate to favorites page when goToFavorites is called', () => {
     const navSpy = vi.spyOn(router, 'navigate');
     component.goToFavorites();
     expect(navSpy).toHaveBeenCalledWith(['/customer/favorites']);
+  });
+
+  it('should navigate to notifications page when goToNotifications is called', () => {
+    const navSpy = vi.spyOn(router, 'navigate');
+    component.goToNotifications();
+    expect(navSpy).toHaveBeenCalledWith(['/customer/notifications']);
   });
 });

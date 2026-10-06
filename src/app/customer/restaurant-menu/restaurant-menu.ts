@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { MenuService } from '../../core/services/menu.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { MenuItem } from '../../core/models/menu-item.model';
@@ -26,6 +27,7 @@ export class RestaurantMenu implements OnInit, OnDestroy {
   restaurantId: number = 0;
   menuItems: MenuItem[] = [];
   filteredMenuItems: MenuItem[] = [];
+  unreadNotificationsCount: number = 0;
 
   isLoading: boolean = true;
   notFound: boolean = false;
@@ -55,10 +57,12 @@ export class RestaurantMenu implements OnInit, OnDestroy {
     private restaurantService: RestaurantService,
     private menuService: MenuService,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
+    this.loadUnreadCount();
     if (this.route.paramMap) {
       this.routeSub = this.route.paramMap.subscribe((params) => {
         const idParam = params.get('id');
@@ -68,6 +72,16 @@ export class RestaurantMenu implements OnInit, OnDestroy {
       const idParam = this.route.snapshot?.paramMap?.get('id');
       this.handleParamId(idParam);
     }
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   ngOnDestroy(): void {

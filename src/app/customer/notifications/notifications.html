@@ -1,0 +1,325 @@
+<div class="page-container">
+
+  <!-- Cinematic Background Layer (Fixed & Blurred Dining Scene) -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      style="background-image: url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=2000&q=80');"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
+      </div>
+
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury" routerLink="/customer/favorites">Favorites</a>
+        <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <a class="nav-link-luxury active" routerLink="/customer/notifications">Notifications</a>
+
+        <div class="nav-actions-luxury">
+          <!-- Notification Bell with dynamic badge -->
+          <a routerLink="/customer/notifications" class="nav-bell-btn active" aria-label="Notifications" title="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span *ngIf="unreadCount > 0" class="nav-bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          </a>
+
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Feedback Banner (Toast) -->
+  <div *ngIf="feedbackMessage" class="luxury-banner" style="position: sticky; top: 72px; z-index: 99;">
+    <div class="banner-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>{{ feedbackMessage }}</span>
+    </div>
+    <button class="banner-close-btn" (click)="feedbackMessage = ''">✕</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Header Section -->
+    <div class="journal-hero-banner" style="margin-bottom: 2.5rem;">
+      <div>
+        <span class="eyebrow-pill" style="margin-bottom: 0.4rem;">
+          <span>✦</span>
+          <span>Concierge Desk &bull; Updates</span>
+        </span>
+        <h1 style="font-size: 2.2rem; color: var(--text-primary); margin-bottom: 0.35rem;">Your Notifications</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 600px; margin: 0;">
+          Important updates from your dining journey.
+        </p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span *ngIf="unreadCount > 0" class="eyebrow-pill" style="background: rgba(201, 164, 92, 0.15); border-color: var(--gold-primary);">
+          <span>●</span>
+          <span>{{ unreadCount }} Unread Updates</span>
+        </span>
+        <button
+          *ngIf="unreadCount > 0"
+          type="button"
+          class="btn btn-outline-gold"
+          style="font-size: 0.8rem; padding: 0.5rem 1rem;"
+          (click)="markAllAsRead()"
+        >
+          <span>Mark All as Read</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="editorial-filter-bar" style="margin-bottom: 2rem;">
+      <button
+        type="button"
+        class="editorial-filter-pill"
+        [class.active]="activeFilter === 'ALL'"
+        (click)="setFilter('ALL')"
+      >
+        All ({{ notifications.length }})
+      </button>
+      <button
+        type="button"
+        class="editorial-filter-pill"
+        [class.active]="activeFilter === 'UNREAD'"
+        (click)="setFilter('UNREAD')"
+      >
+        Unread ({{ unreadCount }})
+      </button>
+      <button
+        type="button"
+        class="editorial-filter-pill"
+        [class.active]="activeFilter === 'RESERVATIONS'"
+        (click)="setFilter('RESERVATIONS')"
+      >
+        Reservations
+      </button>
+      <button
+        type="button"
+        class="editorial-filter-pill"
+        [class.active]="activeFilter === 'QUEUE'"
+        (click)="setFilter('QUEUE')"
+      >
+        Queue &amp; Tables
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" style="text-align: center; padding: 5rem 2rem;">
+      <div class="gold-loading-spinner" style="margin: 0 auto 1.5rem auto;"></div>
+      <p style="color: var(--gold-light); font-size: 1rem; letter-spacing: 0.04em;">Retrieving concierge notices...</p>
+    </div>
+
+    <!-- Notifications List -->
+    <div *ngIf="!isLoading && filteredNotifications.length > 0" class="notifications-list" style="display: flex; flex-direction: column; gap: 1rem; max-width: 860px; margin: 0 auto;">
+      <div
+        *ngFor="let n of filteredNotifications"
+        class="notification-card"
+        [class.is-unread]="!n.read"
+        [class.is-read]="n.read"
+        (click)="onNotificationClick(n)"
+      >
+        <!-- Icon Badge -->
+        <div class="notification-icon-box" [attr.data-type]="n.type">
+          <!-- Reservation Confirmed -->
+          <svg *ngIf="n.type === 'RESERVATION_CONFIRMED'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/>
+          </svg>
+          <!-- Reservation Rescheduled -->
+          <svg *ngIf="n.type === 'RESERVATION_RESCHEDULED'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
+          </svg>
+          <!-- Reservation Cancelled -->
+          <svg *ngIf="n.type === 'RESERVATION_CANCELLED'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E57373" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <!-- Queue Update -->
+          <svg *ngIf="n.type === 'QUEUE_UPDATE'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E2C889" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <!-- Table Ready -->
+          <svg *ngIf="n.type === 'TABLE_READY'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#81C784" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <!-- Review Submitted -->
+          <svg *ngIf="n.type === 'REVIEW_SUBMITTED'" width="20" height="20" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <!-- System -->
+          <svg *ngIf="n.type === 'SYSTEM'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+
+        <!-- Body -->
+        <div class="notification-body">
+          <div class="notification-header-row">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span class="notification-type-tag">{{ n.type.replace('_', ' ') }}</span>
+              <span *ngIf="!n.read" class="unread-dot-indicator" title="Unread">●</span>
+              <h3 class="notification-title" [class.font-bold]="!n.read">{{ n.title }}</h3>
+            </div>
+            <span class="notification-time">{{ n.createdAt }}</span>
+          </div>
+
+          <p class="notification-desc">{{ n.message }}</p>
+
+          <!-- Context Badges -->
+          <div class="notification-tags-row">
+            <span *ngIf="n.reservationId" class="notification-meta-pill">
+              Reservation #{{ n.reservationId }}
+            </span>
+            <span *ngIf="n.restaurantId && restaurantNames[n.restaurantId]" class="notification-meta-pill">
+              {{ restaurantNames[n.restaurantId] }}
+            </span>
+            <span *ngIf="n.reservationId || n.restaurantId || n.type === 'QUEUE_UPDATE' || n.type === 'TABLE_READY'" class="notification-hint-link">
+              View Details &rarr;
+            </span>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="notification-card-actions">
+          <button
+            *ngIf="!n.read"
+            type="button"
+            class="notification-action-btn"
+            (click)="markAsRead(n, $event)"
+            title="Mark as read"
+            aria-label="Mark as read"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            class="notification-action-btn delete-btn"
+            (click)="deleteNotification(n.id, $event)"
+            title="Delete notification"
+            aria-label="Delete notification"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty States -->
+    <!-- 1. Caught Up (Zero total notifications) -->
+    <div *ngIf="!isLoading && notifications.length === 0" class="favorites-empty-card">
+      <div class="favorites-crest-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.8">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </div>
+
+      <span class="eyebrow-pill" style="margin-bottom: 0.75rem;">
+        <span>✦</span>
+        <span>CONCIERGE DESK</span>
+      </span>
+
+      <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem;">You're All Caught Up</h2>
+      <p style="color: var(--text-muted); font-size: 0.98rem; max-width: 480px; margin: 0 auto 2rem auto; line-height: 1.6;">
+        New dining updates will appear here.
+      </p>
+
+      <a routerLink="/customer/restaurants" class="btn btn-gold" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <span>Explore Restaurants</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+
+    <!-- 2. No Unread Notifications -->
+    <div *ngIf="!isLoading && activeFilter === 'UNREAD' && filteredNotifications.length === 0 && notifications.length > 0" class="favorites-empty-card">
+      <div class="favorites-crest-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#81C784" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+
+      <span class="eyebrow-pill" style="margin-bottom: 0.75rem;">
+        <span>✦</span>
+        <span>INBOX CLEAR</span>
+      </span>
+
+      <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem;">No Unread Notifications</h2>
+      <p style="color: var(--text-muted); font-size: 0.98rem; max-width: 480px; margin: 0 auto 2rem auto; line-height: 1.6;">
+        You've reviewed all your latest updates.
+      </p>
+
+      <button type="button" class="btn btn-outline-gold" (click)="setFilter('ALL')">
+        <span>View All Notifications</span>
+      </button>
+    </div>
+
+    <!-- 3. No Category Notifications -->
+    <div *ngIf="!isLoading && activeFilter !== 'UNREAD' && activeFilter !== 'ALL' && filteredNotifications.length === 0 && notifications.length > 0" class="favorites-empty-card">
+      <h2 style="font-size: 1.6rem; color: var(--text-primary); margin-bottom: 0.5rem;">No Notifications in This Category</h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.5rem;">
+        No notices found for {{ activeFilter.toLowerCase() }}.
+      </p>
+      <button type="button" class="btn btn-outline-gold" (click)="setFilter('ALL')">
+        <span>View All Notifications</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Concierge Table Registry</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
+  </footer>
+
+</div>

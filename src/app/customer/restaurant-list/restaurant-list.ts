@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { FavoriteService } from '../../core/services/favorite.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Restaurant } from '../../core/models/restaurant.model';
 
@@ -23,17 +24,30 @@ export class RestaurantList implements OnInit {
   tableAvailability: { [restaurantId: number]: { total: number; available: number } } = {};
   isMobileMenuOpen: boolean = false;
   favoriteRestaurantIds = new Set<number>();
+  unreadNotificationsCount: number = 0;
 
   constructor(
     private restaurantService: RestaurantService,
     private favoriteService: FavoriteService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
     this.loadRestaurants();
     this.loadFavorites();
+    this.loadUnreadCount();
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   loadFavorites(): void {

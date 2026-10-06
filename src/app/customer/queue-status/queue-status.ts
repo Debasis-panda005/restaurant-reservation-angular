@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { QueueService } from '../../core/services/queue.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QueueTicket } from '../../core/models/queue-ticket.model';
 import { Restaurant } from '../../core/models/restaurant.model';
@@ -19,6 +20,7 @@ export class QueueStatus implements OnInit {
   currentTicket: QueueTicket | null = null;
   restaurant: Restaurant | null = null;
   restaurants: Restaurant[] = [];
+  unreadNotificationsCount: number = 0;
 
   // Feedback notifications
   notificationMessage: string = '';
@@ -33,12 +35,24 @@ export class QueueStatus implements OnInit {
     private queueService: QueueService,
     private restaurantService: RestaurantService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Optional() private notificationService?: NotificationService
   ) {}
 
   ngOnInit(): void {
     this.loadRestaurants();
     this.loadQueueStatus();
+    this.loadUnreadCount();
+  }
+
+  loadUnreadCount(): void {
+    const user = this.authService.getCurrentUser();
+    const customerId = user ? user.id : 1;
+    this.notificationService?.getUnreadCount(customerId).subscribe({
+      next: (count) => {
+        this.unreadNotificationsCount = count;
+      },
+    });
   }
 
   loadRestaurants(): void {
