@@ -1,0 +1,340 @@
+<div class="page-container">
+
+  <!-- Cinematic Restaurant Photographic Background Layer (Fixed & Blurred) -->
+  <div class="cinematic-backdrop" aria-hidden="true">
+    <div
+      class="cinematic-backdrop-img"
+      [style.background-image]="'url(' + (restaurant?.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=80') + ')'"
+    ></div>
+    <div class="cinematic-backdrop-overlay"></div>
+  </div>
+
+  <!-- Luxury Full-Width Navbar -->
+  <header class="luxury-navbar">
+    <div class="nav-shell">
+      <div class="nav-brand-luxury" routerLink="/customer/dashboard">
+        <svg class="nav-brand-crest" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <circle cx="24" cy="24" r="18" stroke="#C9A45C" stroke-width="1"/>
+          <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M29 14C29 18 28 22 28 25V34M28 14H30C30 19 28 25 28 25" stroke="#C9A45C" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="nav-brand-text">
+          <span class="nav-brand-title">Restaurant Reservation</span>
+          <span class="nav-brand-sub">Private Dining Collective</span>
+        </div>
+      </div>
+
+      <button class="nav-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+        <span class="nav-hamburger-bar"></span>
+      </button>
+
+      <nav class="nav-links-luxury" [class.open]="isMobileMenuOpen">
+        <a class="nav-link-luxury" routerLink="/customer/dashboard">Dashboard</a>
+        <a class="nav-link-luxury active" routerLink="/customer/restaurants">Restaurants</a>
+        <a class="nav-link-luxury" routerLink="/customer/reservations">My Reservations</a>
+        <a class="nav-link-luxury" routerLink="/customer/queue">Queue Status</a>
+        <div class="nav-actions-luxury">
+          <button class="nav-logout-btn" (click)="logout()">
+            <span>Sign Out</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Shell -->
+  <main class="main-content">
+
+    <!-- Top Breadcrumb / Return Link -->
+    <div style="margin-bottom: 1.75rem;">
+      <a
+        (click)="backToRestaurant()"
+        style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        <span>Back to Restaurant</span>
+      </a>
+    </div>
+
+    <!-- 1. LOADING STATE -->
+    <div *ngIf="isLoading" class="menu-state-container">
+      <div class="pass-loading-spinner" aria-hidden="true"></div>
+      <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.95rem;">
+        Loading culinary menu &amp; dining selections...
+      </p>
+    </div>
+
+    <!-- 2. NOT FOUND STATE -->
+    <div *ngIf="!isLoading && notFound" class="menu-state-card">
+      <div class="menu-crest-badge">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h2 class="menu-error-title">Restaurant Not Found</h2>
+      <p class="menu-error-desc">
+        The requested restaurant profile could not be found. Please browse our dining directory to select another venue.
+      </p>
+      <button class="btn btn-gold" (click)="backToDirectory()">
+        <span>Return to Dining Directory</span>
+      </button>
+    </div>
+
+    <!-- 3. MAIN MENU CONTENT (When Restaurant is Loaded) -->
+    <div *ngIf="!isLoading && !notFound && restaurant">
+
+      <!-- Restaurant Menu Hero Header -->
+      <section class="menu-hero-card">
+        <div
+          class="menu-hero-bg"
+          [style.background-image]="'url(' + (restaurant.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80') + ')'"
+        ></div>
+        <div class="menu-hero-overlay"></div>
+
+        <div class="menu-hero-content">
+          <div class="menu-hero-eyebrow">
+            <span class="eyebrow-pill">
+              <span>✦</span>
+              <span>A LA CARTE &amp; TASTING MENU</span>
+            </span>
+          </div>
+
+          <h1 class="menu-hero-name">{{ restaurant.name }}</h1>
+
+          <div class="menu-hero-meta">
+            <div class="meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>{{ restaurant.location }}</span>
+            </div>
+
+            <span class="meta-divider">&bull;</span>
+
+            <div class="meta-item text-gold">
+              {{ restaurant.cuisine }}
+            </div>
+
+            <span class="meta-divider">&bull;</span>
+
+            <div class="rating-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span>{{ restaurant.rating.toFixed(1) }}</span>
+            </div>
+          </div>
+
+          <p class="menu-hero-desc">{{ restaurant.description }}</p>
+
+          <div class="menu-hero-actions">
+            <button class="btn btn-gold" (click)="backToRestaurant()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>Reserve a Table</span>
+            </button>
+            <button class="btn btn-secondary-dark" (click)="backToRestaurant()">
+              <span>Back to Restaurant</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Search & Category Filter Section -->
+      <section class="menu-controls-card">
+        <!-- Search Input Bar -->
+        <div class="menu-search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+            placeholder="Search the menu (e.g., chicken, risotto, mushroom, tikka)..."
+            class="menu-search-input"
+            aria-label="Search restaurant menu"
+          />
+          <button
+            *ngIf="searchQuery"
+            type="button"
+            class="clear-search-btn"
+            (click)="clearSearch()"
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Category Horizontal Navigation Bar -->
+        <div class="menu-categories-scroll">
+          <button
+            *ngFor="let cat of categories"
+            type="button"
+            class="menu-category-pill"
+            [class.active]="selectedCategory === cat.key"
+            (click)="selectCategory(cat.key)"
+          >
+            <span>{{ cat.label }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. EMPTY STATE: No items in restaurant menu at all -->
+      <div *ngIf="menuItems.length === 0" class="menu-state-card">
+        <div class="menu-crest-badge">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <h2 class="menu-error-title">Menu Coming Soon</h2>
+        <p class="menu-error-desc">
+          Please check back later for today's dining selection. We are curating our seasonal offerings.
+        </p>
+        <button class="btn btn-gold" (click)="backToRestaurant()">
+          <span>Back to Restaurant</span>
+        </button>
+      </div>
+
+      <!-- 5. SEARCH EMPTY STATE: Items exist but search/filter returned 0 results -->
+      <div *ngIf="menuItems.length > 0 && filteredMenuItems.length === 0" class="menu-state-card">
+        <div class="menu-crest-badge">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <h2 class="menu-error-title">No dishes found</h2>
+        <p class="menu-error-desc">
+          No culinary offerings match "<strong style="color: var(--gold-light);">{{ searchQuery }}</strong>" in the selected category. Try another dish or category.
+        </p>
+        <button class="btn btn-gold" (click)="clearSearch()">
+          <span>Clear Search</span>
+        </button>
+      </div>
+
+      <!-- 6. MENU ITEMS GRID -->
+      <section *ngIf="filteredMenuItems.length > 0" class="menu-items-section">
+        <div class="menu-grid-header">
+          <span class="menu-count-text">Showing {{ filteredMenuItems.length }} culinary selections</span>
+        </div>
+
+        <div class="menu-cards-grid">
+          <article
+            *ngFor="let item of filteredMenuItems"
+            class="menu-item-card"
+            [class.is-unavailable]="!item.available"
+          >
+            <!-- Dish Photography with Fallback -->
+            <div class="menu-item-img-shell">
+              <img
+                [src]="item.imageUrl"
+                [alt]="item.name"
+                (error)="onImageError($event)"
+                class="menu-item-image"
+                loading="lazy"
+              />
+              <div class="menu-item-overlay"></div>
+
+              <!-- Dietary & Category Badges -->
+              <div class="menu-item-tags">
+                <span
+                  class="dietary-badge"
+                  [class.badge-veg]="item.vegetarian"
+                  [class.badge-nonveg]="!item.vegetarian"
+                >
+                  <span class="dietary-icon"></span>
+                  <span>{{ item.vegetarian ? 'VEG' : 'NON-VEG' }}</span>
+                </span>
+
+                <span *ngIf="item.spicy" class="spicy-badge" title="Spicy Dish">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.5 7.5c-.8-1.5-2.2-2.5-3.8-2.9 1.1-1.3 1.4-2.8 1.4-3.6 0-.6-.5-1-1.1-1-.5 0-.9.3-1.1.8-.8 2-2.4 3.7-4.4 4.7C7.2 6.6 6 8.3 6 10.2c0 3.3 2.7 6 6 6s6-2.7 6-6c0-.9-.2-1.8-.5-2.7z"/>
+                  </svg>
+                  <span>Spicy</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Dish Information Body -->
+            <div class="menu-item-body">
+              <div class="menu-item-topline">
+                <span class="menu-item-category-tag">{{ item.category.replace('_', ' ') }}</span>
+              </div>
+
+              <h2 class="menu-item-title">{{ item.name }}</h2>
+
+              <p class="menu-item-desc">{{ item.description }}</p>
+
+              <!-- Footer with Price & Availability -->
+              <div class="menu-item-footer">
+                <div class="menu-item-price">
+                  <span class="currency-symbol">₹</span>
+                  <span class="price-val">{{ item.price }}</span>
+                </div>
+
+                <div class="menu-item-status">
+                  <span *ngIf="item.available" class="badge-status badge-confirmed">
+                    <span>✓</span>
+                    <span>Available</span>
+                  </span>
+                  <span *ngIf="!item.available" class="badge-status badge-unavailable">
+                    Currently Unavailable
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Bottom Reservation Call-to-Action -->
+      <section class="menu-cta-banner">
+        <div class="cta-crest-wrapper">
+          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.5" stroke-dasharray="2 3"/>
+            <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3 class="cta-title">Ready for an Unforgettable Dining Experience?</h3>
+        <p class="cta-desc">
+          Select an available table and confirm your private reservation at {{ restaurant.name }}.
+        </p>
+        <button class="btn btn-gold cta-btn" (click)="backToRestaurant()">
+          <span>Proceed to Table Reservation</span>
+        </button>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Luxury Footer -->
+  <footer class="luxury-footer">
+    <div class="footer-crest">
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="2 3"/>
+        <path d="M19 14V22C19 23.6569 20.3431 25 22 25V34M22 14V22M25 14V22C25 23.6569 23.6569 25 22 25" stroke="#C9A45C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="footer-brand-title">Restaurant Reservation</div>
+    <div class="footer-brand-sub">Private Dining Collective &bull; Digital Restaurant Menu</div>
+    <p class="footer-copy">&copy; 2026 Fine Dining Hospitality Group &bull; All Rights Reserved</p>
+  </footer>
+
+</div>

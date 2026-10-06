@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { RestaurantDetails } from './restaurant-details';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { ReservationService } from '../../core/services/reservation.service';
@@ -9,6 +9,7 @@ describe('RestaurantDetails', () => {
   let component: RestaurantDetails;
   let fixture: ComponentFixture<RestaurantDetails>;
   let reservationService: ReservationService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -19,6 +20,7 @@ describe('RestaurantDetails', () => {
     fixture = TestBed.createComponent(RestaurantDetails);
     component = fixture.componentInstance;
     reservationService = TestBed.inject(ReservationService);
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
@@ -78,5 +80,22 @@ describe('RestaurantDetails', () => {
     expect(component.createdReservation?.tableId).toBe(102);
     expect(component.createdReservation?.status).toBe('CONFIRMED');
     expect(availableTable.available).toBe(false);
+  });
+
+  it('should navigate to digital menu on viewMenu', () => {
+    const navSpy = vi.spyOn(router, 'navigate');
+    component.restaurant = {
+      id: 1,
+      name: 'Spice Symphony Bistro',
+      location: 'Bhubaneswar, Odisha',
+      cuisine: 'North Indian & Mughlai',
+      description: 'Authentic royal curries',
+      rating: 4.8,
+      tagline: 'Imperial Flavors',
+      imageUrl: ''
+    };
+
+    component.viewMenu();
+    expect(navSpy).toHaveBeenCalledWith(['/customer/restaurants', 1, 'menu']);
   });
 });

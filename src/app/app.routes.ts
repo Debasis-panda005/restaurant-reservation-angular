@@ -6,7 +6,6 @@ import { RestaurantList } from './customer/restaurant-list/restaurant-list';
 import { RestaurantDetails } from './customer/restaurant-details/restaurant-details';
 import { MyReservations } from './customer/my-reservations/my-reservations';
 import { QueueStatus } from './customer/queue-status/queue-status';
-import { QrReservationPass } from './customer/qr-reservation-pass/qr-reservation-pass';
 
 export const routes: Routes = [
   {
@@ -36,6 +35,13 @@ export const routes: Routes = [
     component: RestaurantList
   },
   {
+    path: 'customer/restaurants/:id/menu',
+    loadComponent: () =>
+      import('./customer/restaurant-menu/restaurant-menu').then(
+        (m) => m.RestaurantMenu
+      )
+  },
+  {
     path: 'customer/restaurants/:id',
     component: RestaurantDetails
   },
@@ -50,7 +56,10 @@ export const routes: Routes = [
   },
   {
     path: 'customer/reservation-pass/:id',
-    component: QrReservationPass
+    loadComponent: () =>
+      import('./customer/qr-reservation-pass/qr-reservation-pass').then(
+        (m) => m.QrReservationPass
+      )
   },
   {
     path: 'customer/queue',
