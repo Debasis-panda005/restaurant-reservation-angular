@@ -1,20 +1,49 @@
+:host {
+  display: block;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1e293b;
+}
+
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
+/* ── Page header ─────────────────────────────────────── */
 .dashboard-header {
-  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.page-badge {
+  display: inline-block;
+  background: #ffedd5;
+  color: #c2410c;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
 }
 
 .dashboard-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0;
 }
 
+.dashboard-subtitle {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Metric cards grid ───────────────────────────────── */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -22,27 +51,56 @@
 }
 
 .card {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.card-icon {
+  font-size: 1.3rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.icon-blue  { background: #eff6ff; }
+.icon-amber { background: #fff7ed; }
+.icon-purple{ background: #f5f3ff; }
+.icon-green { background: #ecfdf5; }
+
 .card-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.04em;
 }
 
 .card-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  line-height: 1.2;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.card-hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
 }
