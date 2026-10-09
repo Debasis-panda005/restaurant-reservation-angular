@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-staff-login',
@@ -13,6 +14,8 @@ import {
   styleUrl: './staff-login.css',
 })
 export class StaffLogin {
+  private readonly router = inject(Router, { optional: true });
+
   loginForm = new FormGroup({
     username: new FormControl('', {
       nonNullable: true,
@@ -28,8 +31,7 @@ export class StaffLogin {
 
   onSubmit(): void {
     if (this.loginForm.valid) {
-      this.statusMessage =
-        'Login UI is ready. Authentication will be connected later.';
+      this.router?.navigate(['/staff/dashboard']);
     } else {
       this.loginForm.markAllAsTouched();
     }
