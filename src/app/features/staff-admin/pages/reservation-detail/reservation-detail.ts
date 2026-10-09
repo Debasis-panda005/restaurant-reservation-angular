@@ -17,12 +17,12 @@ export type { ReservationStatus, ReservationItem as ReservationDetailData };
 export class ReservationDetail {
   private readonly route = inject(ActivatedRoute);
 
-  reservation: ReservationItem;
+  reservation: ReservationItem | null = null;
 
   constructor() {
     const routeId = this.route.snapshot.paramMap.get('id');
     const matched = SHARED_MOCK_RESERVATIONS.find((res) => res.id === routeId);
-    this.reservation = { ...(matched ?? SHARED_MOCK_RESERVATIONS[0]) };
+    this.reservation = matched ? { ...matched } : null;
   }
 
   confirmReservation(): void {
@@ -38,8 +38,11 @@ export class ReservationDetail {
   }
 
   private updateStatus(newStatus: ReservationStatus): void {
+    if (!this.reservation) {
+      return;
+    }
     const target = SHARED_MOCK_RESERVATIONS.find(
-      (res) => res.id === this.reservation.id
+      (res) => res.id === this.reservation?.id
     );
     if (target) {
       target.status = newStatus;

@@ -1,12 +1,15 @@
 <div class="detail-container">
+
   <div class="top-nav">
     <a routerLink="/staff/reservations" class="back-link">
-      &larr; Back to Reservations
+      ← Back to Reservations
     </a>
   </div>
 
-  <header class="detail-header">
+  @if (reservation) {
+    <header class="detail-header">
     <div class="header-info">
+      <span class="page-badge">Bookings</span>
       <h1 class="page-title">Reservation Details</h1>
       <span class="reservation-id">ID: {{ reservation.id }}</span>
     </div>
@@ -22,6 +25,7 @@
   </header>
 
   <div class="detail-card">
+
     <div class="card-section">
       <h2 class="section-title">Customer Information</h2>
       <div class="info-grid">
@@ -82,14 +86,14 @@
               class="btn btn-confirm"
               (click)="confirmReservation()"
             >
-              Confirm Reservation
+              ✓ Confirm Reservation
             </button>
             <button
               type="button"
               class="btn btn-reject"
               (click)="rejectReservation()"
             >
-              Reject Reservation
+              ✕ Reject Reservation
             </button>
           } @else if (reservation.status === 'Confirmed') {
             <button
@@ -97,11 +101,26 @@
               class="btn btn-complete"
               (click)="completeReservation()"
             >
-              Complete Reservation
+              ✓ Complete Reservation
             </button>
           }
         </div>
       </div>
     }
+
   </div>
+  } @else {
+    <div class="detail-card">
+      <h2 class="section-title">Reservation Not Found</h2>
+      <p style="color: #64748b; font-size: 0.95rem; margin: 0 0 1.25rem 0;">
+        No reservation was found with this ID.
+      </p>
+      <div class="actions-group">
+        <a routerLink="/staff/reservations" class="btn btn-confirm" style="text-decoration: none;">
+          ← Return to Reservation List
+        </a>
+      </div>
+    </div>
+  }
+
 </div>
