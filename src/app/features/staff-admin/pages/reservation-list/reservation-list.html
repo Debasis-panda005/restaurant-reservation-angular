@@ -1,6 +1,9 @@
 <div class="reservations-container">
+
   <header class="reservations-header">
+    <span class="page-badge">Bookings</span>
     <h1 class="reservations-title">Reservation Management</h1>
+    <p class="reservations-subtitle">View and manage all customer reservations.</p>
   </header>
 
   <div class="table-wrapper">
@@ -41,7 +44,6 @@
               <a
                 [routerLink]="['/staff/reservations', res.id]"
                 class="btn-details"
-                style="text-decoration: none; display: inline-block;"
               >
                 View Details
               </a>
@@ -51,4 +53,5 @@
       </tbody>
     </table>
   </div>
+
 </div>
