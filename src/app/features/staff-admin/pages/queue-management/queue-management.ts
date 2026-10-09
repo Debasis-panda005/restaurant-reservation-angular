@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SHARED_TABLES } from '../table-management/table-management';
 
 export type QueueStatus =
   | 'Waiting'
@@ -24,6 +25,12 @@ export interface QueueItem {
   styleUrl: './queue-management.css',
 })
 export class QueueManagement {
+  alertMessage: string | null = null;
+
+  constructor() {
+    this.recalculatePositions();
+  }
+
   queueList: QueueItem[] = [
     {
       queueNo: 'Q-001',
@@ -73,19 +80,60 @@ export class QueueManagement {
   ];
 
   callCustomer(item: QueueItem): void {
+    this.alertMessage = null;
     item.status = 'Called';
   }
 
   assignTable(item: QueueItem): void {
+    this.alertMessage = null;
+
+    // Find a suitable table that is currently Available and has enough capacity
+    const suitableTable = SHARED_TABLES
+      .filter((t) => t.status === 'Available' && t.capacity >= item.guests)
+      .sort((a, b) => a.capacity - b.capacity)[0];
+
+    if (!suitableTable) {
+      this.alertMessage = `No available table found with capacity for ${item.guests} guests (${item.customerName} remains in Called status).`;
+      return;
+    }
+
     item.status = 'Seated';
-    item.assignedTable = 'T-01';
+    item.assignedTable = suitableTable.tableNumber;
+    suitableTable.status = 'Occupied';
+    this.recalculatePositions();
   }
 
   completeQueue(item: QueueItem): void {
+    this.alertMessage = null;
     item.status = 'Completed';
+    if (item.assignedTable && item.assignedTable !== '—') {
+      const table = SHARED_TABLES.find((t) => t.tableNumber === item.assignedTable);
+      if (table && table.status === 'Occupied') {
+        table.status = 'Available';
+      }
+    }
   }
 
   cancelQueue(item: QueueItem): void {
+    this.alertMessage = null;
+    if (item.status === 'Seated' && item.assignedTable && item.assignedTable !== '—') {
+      const table = SHARED_TABLES.find((t) => t.tableNumber === item.assignedTable);
+      if (table && table.status === 'Occupied') {
+        table.status = 'Available';
+      }
+    }
     item.status = 'Cancelled';
+    this.recalculatePositions();
+  }
+
+  private recalculatePositions(): void {
+    let pos = 1;
+    for (const entry of this.queueList) {
+      if (entry.status === 'Waiting' || entry.status === 'Called') {
+        entry.position = pos++;
+      } else {
+        entry.position = 0;
+      }
+    }
   }
 }
