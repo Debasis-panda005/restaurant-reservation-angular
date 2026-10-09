@@ -1,10 +1,26 @@
 <div class="queue-container">
+
   <header class="queue-header">
+    <span class="page-badge">Waitlist</span>
     <h1 class="queue-title">Queue Management</h1>
     <p class="queue-description">
       Manage the current customer queue and table assignment.
     </p>
   </header>
+
+  @if (alertMessage) {
+    <div class="queue-alert" role="alert">
+      <span>{{ alertMessage }}</span>
+      <button
+        type="button"
+        class="alert-dismiss-btn"
+        (click)="alertMessage = null"
+        aria-label="Dismiss alert"
+      >
+        ✕
+      </button>
+    </div>
+  }
 
   <div class="table-wrapper">
     <table class="queue-table">
@@ -27,7 +43,7 @@
             <td class="customer-name">{{ item.customerName }}</td>
             <td>{{ item.guests }}</td>
             <td>{{ item.joinedTime }}</td>
-            <td>#{{ item.position }}</td>
+            <td>{{ item.position > 0 ? '#' + item.position : '—' }}</td>
             <td>
               <span
                 class="status-badge"
@@ -98,12 +114,17 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="8" class="empty-state">
-              No customers are currently waiting.
+            <td colspan="8" class="empty-state-cell">
+              <div class="empty-state">
+                <span class="empty-icon">👥</span>
+                <h3>No Customers in Queue</h3>
+                <p>There are no customers currently waiting in the waitlist.</p>
+              </div>
             </td>
           </tr>
         }
       </tbody>
     </table>
   </div>
+
 </div>
