@@ -1,6 +1,9 @@
 <div class="tables-container">
+
   <header class="tables-header">
+    <span class="page-badge">Floor Plan</span>
     <h1 class="tables-title">Table Management</h1>
+    <p class="tables-subtitle">Current status of all restaurant tables.</p>
   </header>
 
   <section class="tables-grid">
@@ -19,11 +22,40 @@
         </div>
         <div class="card-body">
           <div class="capacity-info">
-            <span class="capacity-label">Capacity:</span>
+            <span class="capacity-label">Capacity</span>
             <span class="capacity-value">{{ table.capacity }} guests</span>
+          </div>
+          <div class="card-actions">
+            @if (table.status === 'Available') {
+              <button
+                type="button"
+                class="btn-action btn-mark-occupied"
+                (click)="toggleStatus(table)"
+              >
+                Mark Occupied
+              </button>
+            } @else if (table.status === 'Occupied') {
+              <button
+                type="button"
+                class="btn-action btn-mark-available"
+                (click)="toggleStatus(table)"
+              >
+                Mark Available
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn-action btn-reserved"
+                disabled
+                title="Reserved tables cannot be changed directly"
+              >
+                Reserved
+              </button>
+            }
           </div>
         </div>
       </div>
     }
   </section>
+
 </div>
