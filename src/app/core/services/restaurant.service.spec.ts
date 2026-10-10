@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { firstValueFrom } from 'rxjs';
 import { RestaurantService } from './restaurant.service';
 import { RestaurantDto } from '../models/restaurant.model';
+import { TableDto } from '../models/table.model';
 
 describe('RestaurantService', () => {
   let service: RestaurantService;
@@ -156,21 +157,51 @@ describe('RestaurantService', () => {
     expect(rMissing).toBeUndefined();
   });
 
-  it('should return tables for restaurant matching DB IDs (1, 5, 6) and legacy IDs (2, 3)', async () => {
-    const t1 = await firstValueFrom(service.getTablesByRestaurantId(1));
-    expect(t1.length).toBe(5);
+  it('should fetch tables from API and map TableDto correctly', async () => {
+    const mockTables: TableDto[] = [
+      { id: 3, tableNumber: 'T-01', capacity: 4, active: true },
+      { id: 4, tableNumber: 'T-02', capacity: 2, active: true }
+    ];
 
-    const t5 = await firstValueFrom(service.getTablesByRestaurantId(5));
-    expect(t5.length).toBe(3);
+    const tablesPromise = firstValueFrom(service.getTablesByRestaurantId(1));
+    const req = httpMock.expectOne('http://localhost:8080/api/restaurants/1/tables');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockTables);
 
-    const t6 = await firstValueFrom(service.getTablesByRestaurantId(6));
-    expect(t6.length).toBe(2);
+    const tables = await tablesPromise;
+    expect(tables.length).toBe(2);
+    expect(tables[0].id).toBe(3);
+    expect(tables[0].restaurantId).toBe(1);
+    expect(tables[0].tableNumber).toBe('T-01');
+    expect(tables[0].capacity).toBe(4);
+    expect(tables[0].available).toBe(true);
+    expect(tables[1].id).toBe(4);
+    expect(tables[1].capacity).toBe(2);
+  });
 
-    // Legacy IDs 2 and 3 should also resolve
-    const t2 = await firstValueFrom(service.getTablesByRestaurantId(2));
-    expect(t2.length).toBe(3);
+  it('should handle empty array when backend returns no tables (HTTP 200 with [])', async () => {
+    const tablesPromise = firstValueFrom(service.getTablesByRestaurantId(5));
+    const req = httpMock.expectOne('http://localhost:8080/api/restaurants/5/tables');
+    req.flush([]);
 
-    const t3 = await firstValueFrom(service.getTablesByRestaurantId(3));
-    expect(t3.length).toBe(2);
+    const tables = await tablesPromise;
+    expect(tables).toEqual([]);
+    expect(tables.length).toBe(0);
+  });
+
+  it('should propagate error when tables API call fails', async () => {
+    let errorCaught: any = null;
+    service.getTablesByRestaurantId(1).subscribe({
+      next: () => {},
+      error: (err) => {
+        errorCaught = err;
+      }
+    });
+
+    const req = httpMock.expectOne('http://localhost:8080/api/restaurants/1/tables');
+    req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
+
+    expect(errorCaught).toBeTruthy();
+    expect(errorCaught.status).toBe(500);
   });
 });

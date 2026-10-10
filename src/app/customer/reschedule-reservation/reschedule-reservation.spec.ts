@@ -247,7 +247,9 @@ describe('RescheduleReservation', () => {
       ...mockConfirmedReservation,
       date: '2026-10-15',
       time: '08:30 PM',
-      tableId: 104
+      tableId: 104,
+      tableNumber: 'T-04',
+      seatingType: 'OUTDOOR'
     }));
 
     component.confirmReschedule();
@@ -255,7 +257,9 @@ describe('RescheduleReservation', () => {
     expect(updateSpy).toHaveBeenCalledWith(1001, {
       date: '2026-10-15',
       time: '08:30 PM',
-      tableId: 104
+      tableId: 104,
+      tableNumber: 'T-04',
+      seatingType: 'OUTDOOR'
     });
 
     expect(component.rescheduleSuccess).toBe(true);

@@ -229,9 +229,9 @@
           <div class="pass-detail-cell">
             <span class="detail-label">Allocated Seating</span>
             <strong class="detail-val text-gold">
-              {{ table?.tableNumber ? ('Table ' + table?.tableNumber) : ('Table T-' + reservation.tableId) }}
-              <span *ngIf="table?.seatingType" style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">
-                ({{ table?.seatingType }})
+              {{ table?.tableNumber ? (table.tableNumber.startsWith('Table') ? table.tableNumber : 'Table ' + table.tableNumber) : (reservation.tableNumber ? (reservation.tableNumber.startsWith('Table') ? reservation.tableNumber : 'Table ' + reservation.tableNumber) : ('Table #' + reservation.tableId)) }}
+              <span *ngIf="table?.seatingType || reservation.seatingType" style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">
+                ({{ table?.seatingType || reservation.seatingType }})
               </span>
             </strong>
           </div>

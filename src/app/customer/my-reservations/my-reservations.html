@@ -70,6 +70,17 @@
     <button class="banner-close-btn" (click)="notificationMessage = ''">✕</button>
   </div>
 
+  <!-- Error Banner -->
+  <div *ngIf="errorMessage" class="luxury-banner" style="border-color: rgba(229, 115, 115, 0.4); background: rgba(30, 10, 10, 0.95); margin-bottom: 1.5rem;">
+    <div class="banner-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E57373" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span style="color: #FFCDD2;">{{ errorMessage }}</span>
+    </div>
+    <button class="banner-close-btn" (click)="errorMessage = ''" style="color: #FFCDD2;">✕</button>
+  </div>
+
   <!-- Main Content -->
   <main class="main-content">
 

@@ -178,6 +178,16 @@ export class RescheduleReservation implements OnInit {
           next: (tables) => {
             this.tables = tables || [];
             this.currentTable = this.tables.find(t => t.id === res.tableId) || null;
+            if (!this.currentTable && res.tableNumber) {
+              this.currentTable = {
+                id: res.tableId,
+                restaurantId: res.restaurantId,
+                tableNumber: res.tableNumber,
+                capacity: res.guests,
+                seatingType: (res.seatingType as any) || 'INDOOR',
+                available: true
+              };
+            }
             // Set initial selected table to current table if compatible
             this.selectedTable = this.currentTable;
             this.isLoading = false;
@@ -356,16 +366,20 @@ export class RescheduleReservation implements OnInit {
     this.reservationService.updateReservation(this.reservation.id, {
       date: this.newDate,
       time: this.newTime,
-      tableId: this.selectedTable.id
+      tableId: this.selectedTable.id,
+      tableNumber: this.selectedTable.tableNumber,
+      seatingType: this.selectedTable.seatingType
     }).subscribe({
       next: (updated) => {
+        this.reservation = updated;
         this.updatedReservation = updated;
         this.rescheduleSuccess = true;
         this.isReviewStep = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.errorMessage = 'Failed to update reservation. Please try again.';
+      error: (err) => {
+        const backendMessage = err?.error?.message || err?.message || 'Failed to update reservation. Please try again.';
+        this.errorMessage = backendMessage;
         this.cdr.markForCheck();
       }
     });

@@ -184,7 +184,12 @@
             <div class="directory-card-avail">
               <span style="color: var(--text-muted);">Live Availability:</span>
               <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="directory-avail-count">
-                ● {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
+                <span *ngIf="tableAvailability[r.id].total > 0">
+                  ● {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
+                </span>
+                <span *ngIf="tableAvailability[r.id].total === 0" style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">
+                  Seating to be announced
+                </span>
               </strong>
               <ng-template #loadingTables>
                 <small style="color: var(--text-dark);">Checking tables...</small>

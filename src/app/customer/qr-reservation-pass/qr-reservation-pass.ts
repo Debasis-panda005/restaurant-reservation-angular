@@ -127,6 +127,16 @@ export class QrReservationPass implements OnInit, OnDestroy {
 
           // 1. Immediately render reservation details
           this.reservation = res;
+          if (res.tableNumber) {
+            this.table = {
+              id: res.tableId,
+              restaurantId: res.restaurantId,
+              tableNumber: res.tableNumber,
+              capacity: res.guests,
+              seatingType: (res.seatingType as any) || 'INDOOR',
+              available: false,
+            };
+          }
           this.isLoading = false;
           this.cdr.markForCheck();
 
@@ -137,7 +147,10 @@ export class QrReservationPass implements OnInit, OnDestroy {
           });
 
           this.restaurantService.getTablesByRestaurantId(res.restaurantId).subscribe((tables) => {
-            this.table = tables.find((t) => t.id === res.tableId) || null;
+            const found = tables.find((t) => t.id === res.tableId);
+            if (found) {
+              this.table = found;
+            }
             this.cdr.markForCheck();
           });
 

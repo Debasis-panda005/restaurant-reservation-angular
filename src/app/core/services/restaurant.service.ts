@@ -1,9 +1,9 @@
 import { Injectable, Optional } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { map, shareReplay, tap, catchError, switchMap } from 'rxjs/operators';
 import { Restaurant, RestaurantDto } from '../models/restaurant.model';
-import { Table } from '../models/table.model';
+import { Table, TableDto } from '../models/table.model';
 
 @Injectable({
   providedIn: 'root'
@@ -186,19 +186,78 @@ export class RestaurantService {
   }
 
   /**
-   * Get available and booked tables for a specific restaurant.
+   * Map backend TableDto to frontend Table model with presentation defaults.
+   */
+  public mapDtoToTable(dto: TableDto | any, restaurantId: number): Table {
+    const id = Number(dto.id);
+    let seatingType: 'INDOOR' | 'OUTDOOR' | 'ROOFTOP' | 'WINDOW' | 'AC' = 'INDOOR';
+
+    if (dto.seatingType) {
+      seatingType = dto.seatingType;
+    } else {
+      const tNum = (dto.tableNumber || '').toUpperCase();
+      if (tNum.includes('ROOF') || tNum.includes('CB-01') || (dto.capacity && dto.capacity >= 8)) {
+        seatingType = 'ROOFTOP';
+      } else if (tNum.includes('OUT') || tNum.includes('CB-02') || (dto.capacity && dto.capacity === 6)) {
+        seatingType = 'OUTDOOR';
+      } else if (tNum.includes('WIN') || tNum.includes('01')) {
+        seatingType = 'WINDOW';
+      } else if (tNum.includes('AC') || tNum.includes('02')) {
+        seatingType = 'AC';
+      } else {
+        seatingType = 'INDOOR';
+      }
+    }
+
+    return {
+      id: id,
+      restaurantId: Number(restaurantId),
+      tableNumber: dto.tableNumber || `T-${id}`,
+      capacity: Number(dto.capacity || 2),
+      seatingType: seatingType,
+      available: dto.available !== undefined ? Boolean(dto.available) : Boolean(dto.active)
+    };
+  }
+
+  /**
+   * Get available and booked tables for a specific restaurant from Spring Boot backend.
+   * Endpoint: GET http://localhost:8080/api/restaurants/{id}/tables
    */
   getTablesByRestaurantId(restaurantId: number): Observable<Table[]> {
     const id = Number(restaurantId);
-    const tables = this.mockTables.filter(
-      (t) =>
-        t.restaurantId === id ||
-        (id === 2 && t.restaurantId === 5) ||
-        (id === 5 && t.restaurantId === 5) ||
-        (id === 3 && t.restaurantId === 6) ||
-        (id === 6 && t.restaurantId === 6)
+
+    // Fallback for isolated test environments without HttpClient
+    if (!this.http) {
+      const tables = this.mockTables.filter(
+        (t) =>
+          t.restaurantId === id ||
+          (id === 2 && t.restaurantId === 5) ||
+          (id === 5 && t.restaurantId === 5) ||
+          (id === 3 && t.restaurantId === 6) ||
+          (id === 6 && t.restaurantId === 6)
+      );
+      return of(tables);
+    }
+
+    return this.http.get<TableDto[]>(`${this.apiUrl}/${id}/tables`).pipe(
+      map((response: any) => {
+        const dtos: TableDto[] = Array.isArray(response)
+          ? response
+          : (response?.data || response?.content || []);
+        return dtos.map((dto) => this.mapDtoToTable(dto, id));
+      }),
+      catchError((err) => {
+        console.error(`[RestaurantService] Error loading tables for restaurant #${id} from API:`, err);
+        return throwError(() => err);
+      })
     );
-    return of(tables);
+  }
+
+  /**
+   * Return copy of mock tables for offline or legacy reservation enrichment fallback.
+   */
+  getMockTables(): Table[] {
+    return [...this.mockTables];
   }
 
   /**

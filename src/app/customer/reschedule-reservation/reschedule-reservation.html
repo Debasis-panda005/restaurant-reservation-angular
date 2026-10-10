@@ -162,7 +162,7 @@
         </div>
         <div class="summary-line">
           <span class="summary-label">New Table</span>
-          <span class="summary-val">{{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</span>
+          <span class="summary-val">{{ selectedTable?.tableNumber ? (selectedTable.tableNumber.startsWith('Table') ? selectedTable.tableNumber : 'Table ' + selectedTable.tableNumber) : (updatedReservation.tableNumber ? (updatedReservation.tableNumber.startsWith('Table') ? updatedReservation.tableNumber : 'Table ' + updatedReservation.tableNumber) : ('Table #' + updatedReservation.tableId)) }} ({{ selectedTable?.seatingType || updatedReservation.seatingType }})</span>
         </div>
         <div class="summary-line">
           <span class="summary-label">Party</span>
@@ -217,7 +217,7 @@
             </div>
             <div class="comp-row">
               <span class="comp-label">Table</span>
-              <strong class="comp-val">{{ currentTable?.tableNumber || ('Table #' + reservation.tableId) }} ({{ currentTable?.seatingType || 'Standard' }})</strong>
+              <strong class="comp-val">{{ currentTable?.tableNumber ? (currentTable.tableNumber.startsWith('Table') ? currentTable.tableNumber : 'Table ' + currentTable.tableNumber) : (reservation.tableNumber ? (reservation.tableNumber.startsWith('Table') ? reservation.tableNumber : 'Table ' + reservation.tableNumber) : ('Table #' + reservation.tableId)) }} ({{ currentTable?.seatingType || reservation.seatingType || 'Standard' }})</strong>
             </div>
             <div class="comp-row">
               <span class="comp-label">Guests</span>
@@ -238,7 +238,7 @@
             </div>
             <div class="comp-row">
               <span class="comp-label">Table</span>
-              <strong class="comp-val text-gold">{{ selectedTable.tableNumber }} ({{ selectedTable.seatingType }})</strong>
+              <strong class="comp-val text-gold">{{ selectedTable.tableNumber.startsWith('Table') ? selectedTable.tableNumber : 'Table ' + selectedTable.tableNumber }} ({{ selectedTable.seatingType }})</strong>
             </div>
             <div class="comp-row">
               <span class="comp-label">Guests</span>

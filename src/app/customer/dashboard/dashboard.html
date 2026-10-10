@@ -515,7 +515,7 @@
 
       <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Live floor configuration by zone &amp; party capacity:</p>
 
-      <div class="venue-tables-grid" style="max-height: 50vh; overflow-y: auto; padding-right: 0.25rem; margin-bottom: 1.5rem;">
+      <div *ngIf="selectedRestaurantTables.length > 0; else noDashboardTables" class="venue-tables-grid" style="max-height: 50vh; overflow-y: auto; padding-right: 0.25rem; margin-bottom: 1.5rem;">
         <div
           *ngFor="let t of selectedRestaurantTables"
           class="venue-table-box"
@@ -534,6 +534,12 @@
           </div>
         </div>
       </div>
+
+      <ng-template #noDashboardTables>
+        <div style="text-align: center; padding: 2.5rem 1rem; background: rgba(0,0,0,0.25); border: 1px dashed rgba(201,164,92,0.2); border-radius: 4px; margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.88rem;">
+          No seating configuration currently published for this establishment.
+        </div>
+      </ng-template>
 
       <div style="display: flex; justify-content: flex-end; gap: 0.85rem;">
         <button class="btn btn-secondary-dark" (click)="closeTablesModal()">Close</button>

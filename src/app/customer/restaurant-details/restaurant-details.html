@@ -186,8 +186,27 @@
           </button>
         </div>
 
+        <!-- Loading State for Tables -->
+        <div *ngIf="isTablesLoading" style="text-align: center; padding: 3rem 1rem;">
+          <div style="margin: 0 auto 1rem auto; width: 36px; height: 36px; border: 2px solid rgba(201,164,92,0.2); border-top-color: #C9A45C; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <p style="color: var(--gold-light); font-size: 0.88rem; font-family: var(--font-heading); margin: 0;">Consulting Seating Concierge...</p>
+        </div>
+
+        <!-- Tables Error State -->
+        <div *ngIf="tablesErrorMessage && !isTablesLoading" style="text-align: center; padding: 2rem 1.5rem; background: rgba(180, 40, 40, 0.12); border: 1px solid rgba(239, 167, 167, 0.35); border-radius: 4px; margin-top: 1rem;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; color: #EFA7A7; font-size: 0.9rem; margin-bottom: 1rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ tablesErrorMessage }}</span>
+          </div>
+          <button class="btn btn-outline-gold" (click)="loadTables(restaurant?.id || 1)" style="font-size: 0.82rem; padding: 0.4rem 1rem;">
+            Retry Seating Plan
+          </button>
+        </div>
+
         <!-- Legend -->
-        <div class="venue-seating-legend">
+        <div *ngIf="!isTablesLoading && !tablesErrorMessage && tables.length > 0" class="venue-seating-legend">
           <div class="legend-chip">
             <span class="legend-dot dot-avail"></span>
             <span>Available</span>
@@ -203,7 +222,7 @@
         </div>
 
         <!-- Tables Floor Grid -->
-        <div class="venue-tables-grid">
+        <div *ngIf="!isTablesLoading && !tablesErrorMessage && tables.length > 0" class="venue-tables-grid">
           <div
             *ngFor="let t of tables"
             class="venue-table-box"
@@ -223,6 +242,17 @@
               <span *ngIf="!t.available" class="status-busy-text">Unavailable</span>
             </div>
           </div>
+        </div>
+
+        <!-- Empty Tables State (when backend returns 200 with []) -->
+        <div *ngIf="!isTablesLoading && !tablesErrorMessage && tables.length === 0" class="tables-empty-state" style="text-align: center; padding: 3rem 1.5rem; background: rgba(21, 19, 16, 0.6); border: 1px dashed rgba(201, 164, 92, 0.25); border-radius: 4px; margin-top: 1rem;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5" style="margin: 0 auto 1rem auto; opacity: 0.85;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <h3 style="font-size: 1.15rem; color: var(--gold-light); font-family: var(--font-heading); margin-bottom: 0.35rem;">No Tables Currently Published</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0 auto; max-width: 380px;">
+            This dining establishment has not published its live seating floor plan yet. Please check back shortly or explore other venues.
+          </p>
         </div>
       </section>
 
@@ -263,7 +293,8 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                 </svg>
-                <span>Please select an available table from the floor plan on the left.</span>
+                <span *ngIf="tables.length > 0">Please select an available table from the floor plan on the left.</span>
+                <span *ngIf="tables.length === 0 && !isTablesLoading" style="color: #EFA7A7;">Online reservation is currently unavailable because no tables are published.</span>
               </div>
             </ng-template>
           </div>
@@ -276,6 +307,7 @@
               id="bookingDate"
               name="bookingDate"
               [(ngModel)]="bookingDate"
+              (ngModelChange)="onDateChange($event)"
               [min]="minDate"
               required
               class="luxury-dark-input"
@@ -289,10 +321,13 @@
               id="bookingTime"
               name="bookingTime"
               [(ngModel)]="bookingTime"
+              (ngModelChange)="onTimeChange($event)"
               required
               class="luxury-dark-input"
             >
-              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+              <option *ngFor="let slot of timeSlots" [value]="slot">
+                {{ slot }}{{ isSlotFullyBooked(slot) ? ' (Fully Booked)' : '' }}
+              </option>
             </select>
           </div>
 
@@ -318,10 +353,10 @@
           <button
             type="submit"
             class="btn btn-gold submit-reserve-btn"
-            [disabled]="!selectedTable"
+            [disabled]="!selectedTable || tables.length === 0 || isSubmittingReservation"
           >
-            <span>{{ selectedTable ? 'Confirm & Reserve Table' : 'Select a Table Above First' }}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <span>{{ isSubmittingReservation ? 'Confirming Reservation...' : (tables.length === 0 && !isTablesLoading ? 'Seating Unavailable' : (selectedTable ? 'Confirm & Reserve Table' : 'Select a Table Above First')) }}</span>
+            <svg *ngIf="!isSubmittingReservation" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </button>
@@ -441,7 +476,7 @@
         </div>
         <div class="receipt-row-item">
           <span style="color: var(--text-muted);">Allocated Table:</span>
-          <strong style="color: var(--gold-light);">Table {{ selectedTable?.tableNumber }} ({{ selectedTable?.seatingType }})</strong>
+          <strong style="color: var(--gold-light);">Table {{ createdReservation?.tableNumber || selectedTable?.tableNumber }} ({{ createdReservation?.seatingType || selectedTable?.seatingType }})</strong>
         </div>
         <div class="receipt-row-item">
           <span style="color: var(--text-muted);">Date &amp; Time:</span>
