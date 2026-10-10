@@ -276,4 +276,42 @@ describe('ReservationService', () => {
     expect(result[0].id).toBe(7);
     expect(result[0].status).toBe('CANCELLED');
   });
+
+  it('should send HTTP DELETE to /api/reservations/{id} and update local status to CANCELLED on success', () => {
+    let successResult: boolean | undefined;
+    service.deleteReservation(501).subscribe((res) => {
+      successResult = res;
+    });
+
+    const req = httpTesting.expectOne('http://localhost:8080/api/reservations/501');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({
+      id: 501,
+      customerId: 1,
+      restaurantId: 1,
+      tableId: 3,
+      reservationDate: '2026-10-10',
+      reservationTime: '18:30:00',
+      guests: 2,
+      status: 'CANCELLED'
+    });
+
+    expect(successResult).toBe(true);
+  });
+
+  it('should propagate error when DELETE /api/reservations/{id} fails', () => {
+    let errorCaught: any;
+    service.deleteReservation(999).subscribe({
+      next: () => expect(true).toBe(false),
+      error: (err) => {
+        errorCaught = err;
+      }
+    });
+
+    const req = httpTesting.expectOne('http://localhost:8080/api/reservations/999');
+    req.flush('Reservation not found', { status: 404, statusText: 'Not Found' });
+
+    expect(errorCaught).toBeDefined();
+    expect(errorCaught.status).toBe(404);
+  });
 });

@@ -138,6 +138,12 @@ export class RestaurantService {
             this.restaurantsCache$ = null; // Invalidate cache on failure to allow retry
           }
         }),
+        catchError((err) => {
+          if (err?.status === 0) {
+            return of(this.mockRestaurants);
+          }
+          return throwError(() => err);
+        }),
         shareReplay(1)
       );
     }
@@ -247,7 +253,69 @@ export class RestaurantService {
         return dtos.map((dto) => this.mapDtoToTable(dto, id));
       }),
       catchError((err) => {
+        if (err?.status === 0) {
+          const tables = this.mockTables.filter(
+            (t) =>
+              t.restaurantId === id ||
+              (id === 2 && t.restaurantId === 5) ||
+              (id === 5 && t.restaurantId === 5) ||
+              (id === 3 && t.restaurantId === 6) ||
+              (id === 6 && t.restaurantId === 6)
+          );
+          return of(tables);
+        }
         console.error(`[RestaurantService] Error loading tables for restaurant #${id} from API:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Get available tables for a specific restaurant, date, time, and guest count from backend.
+   * Endpoint: GET http://localhost:8080/api/restaurants/{id}/tables/available?date=...&time=...&guests=...
+   */
+  getAvailableTables(restaurantId: number, date?: string, time?: string, guests?: number): Observable<Table[]> {
+    const id = Number(restaurantId);
+
+    if (!this.http) {
+      const tables = this.mockTables.filter(
+        (t) =>
+          (t.restaurantId === id ||
+          (id === 2 && t.restaurantId === 5) ||
+          (id === 5 && t.restaurantId === 5) ||
+          (id === 3 && t.restaurantId === 6) ||
+          (id === 6 && t.restaurantId === 6)) &&
+          (!guests || t.capacity >= guests)
+      );
+      return of(tables);
+    }
+
+    let params: Record<string, string> = {};
+    if (date) params['date'] = date;
+    if (time) params['time'] = time;
+    if (guests !== undefined && guests !== null) params['guests'] = guests.toString();
+
+    return this.http.get<TableDto[]>(`${this.apiUrl}/${id}/tables/available`, { params }).pipe(
+      map((response: any) => {
+        const dtos: TableDto[] = Array.isArray(response)
+          ? response
+          : (response?.data || response?.content || []);
+        return dtos.map((dto) => this.mapDtoToTable(dto, id));
+      }),
+      catchError((err) => {
+        if (err?.status === 0) {
+          const tables = this.mockTables.filter(
+            (t) =>
+              (t.restaurantId === id ||
+              (id === 2 && t.restaurantId === 5) ||
+              (id === 5 && t.restaurantId === 5) ||
+              (id === 3 && t.restaurantId === 6) ||
+              (id === 6 && t.restaurantId === 6)) &&
+              (!guests || t.capacity >= guests)
+          );
+          return of(tables);
+        }
+        console.error(`[RestaurantService] Error loading available tables for restaurant #${id} from API:`, err);
         return throwError(() => err);
       })
     );

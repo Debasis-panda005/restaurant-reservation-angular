@@ -123,6 +123,11 @@ export class Dashboard implements OnInit {
           (r) => r.status === 'CONFIRMED' || r.status === 'PENDING'
         ).length;
       },
+      error: (err) => {
+        console.error('[Dashboard] Error fetching reservations for summary:', err);
+        this.upcomingReservations = [];
+        this.upcomingReservationsCount = 0;
+      }
     });
 
     // Queue status
@@ -130,6 +135,9 @@ export class Dashboard implements OnInit {
       next: (ticket) => {
         this.currentQueueTicket = ticket || null;
       },
+      error: () => {
+        this.currentQueueTicket = null;
+      }
     });
 
     // Favorites count and list
@@ -137,6 +145,9 @@ export class Dashboard implements OnInit {
       next: (count) => {
         this.favoritesCount = count;
       },
+      error: () => {
+        this.favoritesCount = 0;
+      }
     });
 
     this.favoriteService.getFavoritesByCustomerId(customerId).subscribe({
@@ -169,6 +180,9 @@ export class Dashboard implements OnInit {
           });
         });
       },
+      error: () => {
+        this.favoriteRestaurants = [];
+      }
     });
 
     // Unread notifications count and latest updates
@@ -176,12 +190,18 @@ export class Dashboard implements OnInit {
       next: (count) => {
         this.unreadNotificationsCount = count;
       },
+      error: () => {
+        this.unreadNotificationsCount = 0;
+      }
     });
 
     this.notificationService.getNotificationsByCustomerId(customerId).subscribe({
       next: (notifs) => {
         this.latestNotifications = notifs.slice(0, 3);
       },
+      error: () => {
+        this.latestNotifications = [];
+      }
     });
   }
 

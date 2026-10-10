@@ -175,3 +175,16 @@ input::placeholder {
 .register-footer a:hover {
   color: var(--gold-light, #D6B66A);
 }
+
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.4);
+  color: #ff9b9b;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}

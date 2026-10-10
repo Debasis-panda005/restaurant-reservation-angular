@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -19,22 +19,42 @@ export class Login {
 
   email: string = '';
   password: string = '';
+  errorMessage: string = '';
+  isLoading: boolean = false;
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   login(): void {
+    this.errorMessage = '';
 
-    if (this.email === '' || this.password === '') {
-      alert('Please enter email and password');
+    if (!this.email.trim() || !this.password) {
+      this.errorMessage = 'Please enter your email and password.';
       return;
     }
 
-    // Save session and redirect to Customer Dashboard
-    this.authService.login(this.email, 'Debasis Panda');
-    this.router.navigate(['/customer/dashboard']);
+    this.isLoading = true;
+    this.cdr.markForCheck();
 
+    this.authService.login({
+      email: this.email.trim(),
+      password: this.password
+    }).subscribe({
+      next: () => {
+        this.isLoading = false;
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/customer/dashboard';
+        this.router.navigateByUrl(returnUrl);
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        const msg = err?.error?.message || (err?.status === 401 ? 'Invalid email or password.' : 'Login failed. Please verify your connection.');
+        this.errorMessage = msg;
+        this.cdr.markForCheck();
+      }
+    });
   }
 }

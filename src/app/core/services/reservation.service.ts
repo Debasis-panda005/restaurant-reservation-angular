@@ -141,9 +141,12 @@ export class ReservationService {
           return mapped;
         }),
         catchError((err) => {
+          if (err?.status === 0) {
+            const customerReservations = this.reservations.filter((r) => r.customerId === numericCustomerId);
+            return of(customerReservations);
+          }
           console.error(`[ReservationService] Failed to load reservations for customer #${numericCustomerId} from API:`, err);
-          const local = this.reservations.filter((r) => r.customerId === numericCustomerId);
-          return of(local);
+          return throwError(() => err);
         })
       );
     }
@@ -183,13 +186,16 @@ export class ReservationService {
           return mapped;
         }),
         catchError((err) => {
+          if (err?.status === 0) {
+            const local = this.reservations.filter((r) => {
+              const matchRestaurant = r.restaurantId === numericRestaurantId;
+              const matchDate = date ? r.date === date : true;
+              return matchRestaurant && matchDate;
+            });
+            return of(local);
+          }
           console.error(`[ReservationService] Failed to load reservations for restaurant #${numericRestaurantId} from API:`, err);
-          const local = this.reservations.filter((r) => {
-            const matchRestaurant = r.restaurantId === numericRestaurantId;
-            const matchDate = date ? r.date === date : true;
-            return matchRestaurant && matchDate;
-          });
-          return of(local);
+          return throwError(() => err);
         })
       );
     }
@@ -222,8 +228,7 @@ export class ReservationService {
         }),
         catchError((err) => {
           console.error(`[ReservationService] Failed to load reservation #${numericId} from API:`, err);
-          const local = this.reservations.find((r) => r.id === numericId);
-          return of(local);
+          return throwError(() => err);
         })
       );
     }
@@ -377,6 +382,41 @@ export class ReservationService {
       return of(true);
     }
     return of(false);
+  }
+
+  /**
+   * Soft-cancel an existing reservation by ID via HTTP DELETE.
+   * Spring Boot backend handles DELETE /api/reservations/{id} by transitioning status to CANCELLED.
+   */
+  deleteReservation(id: number): Observable<boolean> {
+    const numericId = Number(id);
+
+    if (this.http) {
+      return this.http.delete<ReservationResponseDto>(`${this.apiUrl}/${numericId}`).pipe(
+        map((response) => {
+          const local = this.reservations.find((r) => r.id === numericId);
+          if (local) {
+            local.status = 'CANCELLED';
+          }
+          const customerId = response?.customerId || local?.customerId || 1;
+          const restaurantId = response?.restaurantId || local?.restaurantId || 1;
+
+          this.sendCancellationNotification({
+            id: numericId,
+            customerId,
+            restaurantId,
+          });
+
+          return true;
+        }),
+        catchError((err) => {
+          console.error(`[ReservationService] Failed to delete reservation #${numericId} via API:`, err);
+          return throwError(() => err);
+        })
+      );
+    }
+
+    return this.cancelReservation(id);
   }
 
   private sendCancellationNotification(res: { id: number; customerId: number; restaurantId: number }): void {

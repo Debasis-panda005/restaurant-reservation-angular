@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -17,28 +18,58 @@ export class Register {
   phone: string = '';
   password: string = '';
   confirmPassword: string = '';
+  errorMessage: string = '';
+  isLoading: boolean = false;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   register() {
+    this.errorMessage = '';
 
     if (
-      this.fullName === '' ||
-      this.email === '' ||
-      this.phone === '' ||
-      this.password === '' ||
-      this.confirmPassword === ''
+      !this.fullName.trim() ||
+      !this.email.trim() ||
+      !this.phone.trim() ||
+      !this.password ||
+      !this.confirmPassword
     ) {
-      alert('Please fill all fields');
+      this.errorMessage = 'Please fill all required fields.';
+      return;
+    }
+
+    if (this.password.length < 6) {
+      this.errorMessage = 'Password must be at least 6 characters.';
       return;
     }
 
     if (this.password !== this.confirmPassword) {
-      alert('Passwords do not match');
+      this.errorMessage = 'Passwords do not match.';
       return;
     }
 
-    alert('Registration successful! Please login with your credentials.');
-    this.router.navigate(['/login']);
+    this.isLoading = true;
+    this.cdr.markForCheck();
+
+    this.authService.register({
+      fullName: this.fullName.trim(),
+      email: this.email.trim(),
+      phone: this.phone.trim(),
+      password: this.password
+    }).subscribe({
+      next: () => {
+        this.isLoading = false;
+        alert('Registration successful! Please login with your credentials.');
+        this.router.navigate(['/login']);
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        this.errorMessage = err?.error?.message || 'Registration failed. Please check your details.';
+        this.cdr.markForCheck();
+      }
+    });
   }
 }

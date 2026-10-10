@@ -204,4 +204,36 @@ describe('RestaurantService', () => {
     expect(errorCaught).toBeTruthy();
     expect(errorCaught.status).toBe(500);
   });
+
+  it('should fetch available tables from API with query params and map correctly', async () => {
+    const mockTables: TableDto[] = [
+      { id: 4, tableNumber: 'T-02', capacity: 4, active: true }
+    ];
+
+    const tablesPromise = firstValueFrom(service.getAvailableTables(1, '2026-11-20', '19:30:00', 2));
+    const req = httpMock.expectOne('http://localhost:8080/api/restaurants/1/tables/available?date=2026-11-20&time=19:30:00&guests=2');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockTables);
+
+    const tables = await tablesPromise;
+    expect(tables.length).toBe(1);
+    expect(tables[0].id).toBe(4);
+    expect(tables[0].tableNumber).toBe('T-02');
+  });
+
+  it('should propagate error when available tables API call fails', async () => {
+    let errorCaught: any = null;
+    service.getAvailableTables(1, '2026-11-20', '19:30:00', 2).subscribe({
+      next: () => {},
+      error: (err) => {
+        errorCaught = err;
+      }
+    });
+
+    const req = httpMock.expectOne('http://localhost:8080/api/restaurants/1/tables/available?date=2026-11-20&time=19:30:00&guests=2');
+    req.flush('Bad Request', { status: 400, statusText: 'Bad Request' });
+
+    expect(errorCaught).toBeTruthy();
+    expect(errorCaught.status).toBe(400);
+  });
 });

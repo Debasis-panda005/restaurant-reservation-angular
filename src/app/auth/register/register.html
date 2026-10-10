@@ -27,6 +27,15 @@
       <p class="subtitle">Join our distinguished dining collective for priority table reservations.</p>
     </div>
 
+    <div class="auth-error-banner" *ngIf="errorMessage">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage }}</span>
+    </div>
+
     <form (ngSubmit)="register()" class="register-form">
 
       <!-- Full Name -->
@@ -135,9 +144,9 @@
       </div>
 
       <!-- Register Button -->
-      <button type="submit" class="submit-btn">
-        <span>Create Patron Account</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <span>{{ isLoading ? 'Creating Account...' : 'Create Patron Account' }}</span>
+        <svg *ngIf="!isLoading" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
       </button>

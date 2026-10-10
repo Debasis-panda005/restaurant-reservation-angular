@@ -4,6 +4,7 @@ import { Register } from './auth/register/register';
 import { Dashboard } from './customer/dashboard/dashboard';
 import { RestaurantList } from './customer/restaurant-list/restaurant-list';
 import { RestaurantDetails } from './customer/restaurant-details/restaurant-details';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -26,7 +27,8 @@ export const routes: Routes = [
   },
   {
     path: 'customer/dashboard',
-    component: Dashboard
+    component: Dashboard,
+    canActivate: [authGuard]
   },
   {
     path: 'customer/restaurants',
@@ -34,6 +36,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/favorites',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/favorites/favorites').then(
         (m) => m.default || m.Favorites
@@ -52,6 +55,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/reservations',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/my-reservations/my-reservations').then(
         (m) => m.MyReservations
@@ -59,6 +63,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/reservations/:id/reschedule',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/reschedule-reservation/reschedule-reservation').then(
         (m) => m.default || m.RescheduleReservation
@@ -66,6 +71,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/reservations/:id/review',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/restaurant-review/restaurant-review').then(
         (m) => m.default || m.RestaurantReview
@@ -78,6 +84,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/reservation-pass/:id',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/qr-reservation-pass/qr-reservation-pass').then(
         (m) => m.QrReservationPass
@@ -85,6 +92,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/queue',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/queue-status/queue-status').then(
         (m) => m.QueueStatus
@@ -92,6 +100,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer/notifications',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./customer/notifications/notifications').then(
         (m) => m.Notifications

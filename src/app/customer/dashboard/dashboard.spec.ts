@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { vi } from 'vitest';
+import { of } from 'rxjs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Dashboard } from './dashboard';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
@@ -13,6 +14,11 @@ describe('Dashboard', () => {
   let component: Dashboard;
   let fixture: ComponentFixture<Dashboard>;
   let router: Router;
+  let reservationService: ReservationService;
+  let restaurantService: RestaurantService;
+  let favoriteService: FavoriteService;
+  let notificationService: NotificationService;
+  let queueService: QueueService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -28,10 +34,41 @@ describe('Dashboard', () => {
       ],
     }).compileComponents();
 
+    reservationService = TestBed.inject(ReservationService);
+    restaurantService = TestBed.inject(RestaurantService);
+    favoriteService = TestBed.inject(FavoriteService);
+    notificationService = TestBed.inject(NotificationService);
+    queueService = TestBed.inject(QueueService);
+
+    vi.spyOn(reservationService, 'getReservationsByCustomerId').mockReturnValue(
+      of([
+        {
+          id: 1001,
+          customerId: 1,
+          restaurantId: 1,
+          tableId: 101,
+          date: '2026-10-15',
+          time: '19:30',
+          guests: 2,
+          status: 'CONFIRMED',
+        },
+      ])
+    );
+    vi.spyOn(restaurantService, 'getRestaurants').mockReturnValue(of([]));
+    vi.spyOn(favoriteService, 'getFavoriteCount').mockReturnValue(of(2));
+    vi.spyOn(favoriteService, 'getFavoritesByCustomerId').mockReturnValue(of([]));
+    vi.spyOn(notificationService, 'getUnreadCount').mockReturnValue(of(3));
+    vi.spyOn(notificationService, 'getNotificationsByCustomerId').mockReturnValue(of([]));
+    vi.spyOn(queueService, 'getQueueStatus').mockReturnValue(of(undefined));
+
     fixture = TestBed.createComponent(Dashboard);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
     await fixture.whenStable();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should create', () => {
