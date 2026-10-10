@@ -104,91 +104,119 @@
       </button>
     </div>
 
-    <!-- Results Counter -->
-    <div style="font-size: 0.84rem; color: var(--text-dark); margin-bottom: 2rem;">
-      Presenting <strong style="color: var(--gold-light);">{{ filteredRestaurants.length }}</strong> curated dining establishments
+    <!-- Loading State -->
+    <div *ngIf="isLoading" style="text-align: center; padding: 4rem 1rem;">
+      <div style="margin: 0 auto 1.5rem auto; width: 44px; height: 44px; border: 2px solid rgba(201,164,92,0.2); border-top-color: #C9A45C; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      <p style="color: var(--gold-light); font-size: 0.95rem; letter-spacing: 0.05em; font-family: var(--font-heading);">Accessing Dining Directory...</p>
     </div>
 
-    <!-- Directory Cards Grid -->
-    <div *ngIf="filteredRestaurants.length > 0; else noResults" class="directory-cards-grid">
-      <div *ngFor="let r of filteredRestaurants" class="directory-restaurant-card">
+    <!-- Error State -->
+    <div *ngIf="errorMessage && !isLoading" style="margin-bottom: 2.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(180, 40, 40, 0.12); border: 1px solid rgba(239, 167, 167, 0.35); padding: 1.25rem 1.75rem; border-radius: 4px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 0.85rem; color: #EFA7A7; font-size: 0.9rem;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <button class="btn btn-outline-gold" (click)="loadRestaurants(true)" style="font-size: 0.82rem; padding: 0.4rem 1rem;">
+        Retry Connection
+      </button>
+    </div>
 
-        <!-- Prominent Image Box -->
-        <div class="directory-card-img-box">
-          <img
-            [src]="r.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'"
-            [alt]="r.name"
-          />
-          <span class="masonry-tag-float">{{ r.cuisine }}</span>
-          <div class="masonry-rating-float">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            <span>{{ r.rating.toFixed(1) }}</span>
+    <!-- Main Directory Content (Loaded State) -->
+    <div *ngIf="!isLoading && !errorMessage">
+
+      <!-- Results Counter -->
+      <div style="font-size: 0.84rem; color: var(--text-dark); margin-bottom: 2rem;">
+        Presenting <strong style="color: var(--gold-light);">{{ filteredRestaurants.length }}</strong> curated dining establishments
+      </div>
+
+      <!-- Directory Cards Grid -->
+      <div *ngIf="filteredRestaurants.length > 0; else noResults" class="directory-cards-grid">
+        <div *ngFor="let r of filteredRestaurants" class="directory-restaurant-card">
+
+          <!-- Prominent Image Box -->
+          <div class="directory-card-img-box">
+            <img
+              [src]="r.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'"
+              [alt]="r.name"
+            />
+            <span class="masonry-tag-float">{{ r.cuisine }}</span>
+            <div class="masonry-rating-float">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span>{{ (r.rating || 4.8).toFixed(1) }}</span>
+            </div>
+
+            <!-- Floating Favorite Heart Button -->
+            <button
+              type="button"
+              class="card-favorite-btn"
+              [class.is-favorited]="isFavorite(r.id)"
+              (click)="toggleFavorite(r.id, $event)"
+              [attr.aria-label]="isFavorite(r.id) ? 'Remove restaurant from favorites' : 'Add restaurant to favorites'"
+              [attr.title]="isFavorite(r.id) ? 'Remove from favorites' : 'Save to favorites'"
+            >
+              <svg class="heart-svg" viewBox="0 0 24 24" [attr.fill]="isFavorite(r.id) ? '#C9A45C' : 'none'" stroke="#C9A45C" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
           </div>
 
-          <!-- Floating Favorite Heart Button -->
-          <button
-            type="button"
-            class="card-favorite-btn"
-            [class.is-favorited]="isFavorite(r.id)"
-            (click)="toggleFavorite(r.id, $event)"
-            [attr.aria-label]="isFavorite(r.id) ? 'Remove restaurant from favorites' : 'Add restaurant to favorites'"
-            [attr.title]="isFavorite(r.id) ? 'Remove from favorites' : 'Save to favorites'"
-          >
-            <svg class="heart-svg" viewBox="0 0 24 24" [attr.fill]="isFavorite(r.id) ? '#C9A45C' : 'none'" stroke="#C9A45C" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
+          <!-- Card Body -->
+          <div class="directory-card-body">
+            <h2 class="directory-card-title">{{ r.name }}</h2>
+            <div class="directory-card-location">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>{{ r.location }}</span>
+              <span *ngIf="r.openingTime && r.closingTime" style="color: var(--text-dark); margin: 0 0.25rem;">&bull;</span>
+              <span *ngIf="r.openingTime && r.closingTime" style="color: var(--gold-light); font-size: 0.78rem;">
+                {{ r.openingTime.slice(0, 5) }} - {{ r.closingTime.slice(0, 5) }}
+              </span>
+            </div>
+
+            <p class="directory-card-desc">{{ r.description }}</p>
+
+            <!-- Table Availability -->
+            <div class="directory-card-avail">
+              <span style="color: var(--text-muted);">Live Availability:</span>
+              <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="directory-avail-count">
+                ● {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
+              </strong>
+              <ng-template #loadingTables>
+                <small style="color: var(--text-dark);">Checking tables...</small>
+              </ng-template>
+            </div>
+
+            <!-- Actions -->
+            <div class="directory-card-actions">
+              <button class="btn btn-secondary-dark" (click)="viewDetails(r.id)">
+                View Details
+              </button>
+              <button class="btn btn-gold" (click)="viewDetails(r.id)">
+                Reserve Table
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- No Results State -->
+      <ng-template #noResults>
+        <div style="text-align: center; background: #151310; border: 1px dashed rgba(201, 164, 92, 0.3); padding: 4rem 2rem; margin: 2rem 0;">
+          <h3 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.5rem;">No matching dining venues found</h3>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">Try refining your search keyword or selecting "All Collections".</p>
+          <button class="btn btn-outline-gold" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
+            Reset Search Filters
           </button>
         </div>
+      </ng-template>
 
-        <!-- Card Body -->
-        <div class="directory-card-body">
-          <h2 class="directory-card-title">{{ r.name }}</h2>
-          <div class="directory-card-location">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-            <span>{{ r.location }}</span>
-          </div>
-
-          <p class="directory-card-desc">{{ r.description }}</p>
-
-          <!-- Table Availability -->
-          <div class="directory-card-avail">
-            <span style="color: var(--text-muted);">Live Availability:</span>
-            <strong *ngIf="tableAvailability[r.id]; else loadingTables" class="directory-avail-count">
-              ● {{ tableAvailability[r.id].available }} of {{ tableAvailability[r.id].total }} Tables Free
-            </strong>
-            <ng-template #loadingTables>
-              <small style="color: var(--text-dark);">Checking tables...</small>
-            </ng-template>
-          </div>
-
-          <!-- Actions -->
-          <div class="directory-card-actions">
-            <button class="btn btn-secondary-dark" (click)="viewDetails(r.id)">
-              View Details
-            </button>
-            <button class="btn btn-gold" (click)="viewDetails(r.id)">
-              Reserve Table
-            </button>
-          </div>
-        </div>
-
-      </div>
     </div>
-
-    <!-- No Results State -->
-    <ng-template #noResults>
-      <div style="text-align: center; background: #151310; border: 1px dashed rgba(201, 164, 92, 0.3); padding: 4rem 2rem; margin: 2rem 0;">
-        <h3 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.5rem;">No matching dining venues found</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">Try refining your search keyword or selecting "All Collections".</p>
-        <button class="btn btn-outline-gold" (click)="searchQuery = ''; selectedCuisine = 'ALL'; filterRestaurants()">
-          Reset Search Filters
-        </button>
-      </div>
-    </ng-template>
 
   </main>
 

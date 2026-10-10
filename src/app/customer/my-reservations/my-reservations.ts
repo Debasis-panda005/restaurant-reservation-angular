@@ -62,7 +62,10 @@ export class MyReservations implements OnInit {
   }
 
   loadData(): void {
-    // First cache restaurants and tables
+    // Immediately load reservations
+    this.loadCustomerReservations();
+
+    // Cache restaurants and tables
     this.restaurantService.getRestaurants().subscribe({
       next: (restaurants) => {
         restaurants.forEach((r) => this.restaurantsMap.set(r.id, r));
@@ -74,7 +77,7 @@ export class MyReservations implements OnInit {
           });
         });
 
-        // Now load customer reservations
+        // Re-enrich with restaurant details
         this.loadCustomerReservations();
       },
     });

@@ -456,7 +456,13 @@ export class MenuService {
    * Get all menu items for a specific restaurant.
    */
   getMenuByRestaurantId(restaurantId: number): Observable<MenuItem[]> {
-    const items = this.mockMenuItems.filter(item => item.restaurantId === restaurantId);
+    const id = Number(restaurantId);
+    const items = this.mockMenuItems.filter(
+      (item) =>
+        item.restaurantId === id ||
+        (id === 5 && item.restaurantId === 2) ||
+        (id === 6 && item.restaurantId === 3)
+    );
     return of(items);
   }
 

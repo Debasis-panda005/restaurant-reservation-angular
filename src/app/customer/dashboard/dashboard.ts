@@ -106,6 +106,9 @@ export class Dashboard implements OnInit {
           });
         });
       },
+      error: (err) => {
+        console.error('[Dashboard] Error fetching restaurants from API:', err);
+      }
     });
   }
 

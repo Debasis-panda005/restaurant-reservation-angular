@@ -1,7 +1,8 @@
-import { Component, OnInit, Optional } from '@angular/core';
+import { Component, OnInit, Optional, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -25,12 +26,15 @@ export class RestaurantList implements OnInit {
   isMobileMenuOpen: boolean = false;
   favoriteRestaurantIds = new Set<number>();
   unreadNotificationsCount: number = 0;
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
   constructor(
     private restaurantService: RestaurantService,
     private favoriteService: FavoriteService,
     private authService: AuthService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
     @Optional() private notificationService?: NotificationService
   ) {}
 
@@ -46,6 +50,7 @@ export class RestaurantList implements OnInit {
     this.notificationService?.getUnreadCount(customerId).subscribe({
       next: (count) => {
         this.unreadNotificationsCount = count;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -57,6 +62,7 @@ export class RestaurantList implements OnInit {
     this.favoriteService.getFavoritesByCustomerId(customerId).subscribe({
       next: (favorites) => {
         this.favoriteRestaurantIds = new Set(favorites.map((f) => f.restaurantId));
+        this.cdr.markForCheck();
       },
     });
   }
@@ -78,6 +84,7 @@ export class RestaurantList implements OnInit {
     } else {
       this.favoriteRestaurantIds.add(restaurantId);
     }
+    this.cdr.markForCheck();
 
     this.favoriteService.toggleFavorite(customerId, restaurantId).subscribe({
       next: (isNowFav) => {
@@ -86,6 +93,7 @@ export class RestaurantList implements OnInit {
         } else {
           this.favoriteRestaurantIds.delete(restaurantId);
         }
+        this.cdr.markForCheck();
       },
       error: () => {
         // Rollback
@@ -94,35 +102,57 @@ export class RestaurantList implements OnInit {
         } else {
           this.favoriteRestaurantIds.add(restaurantId);
         }
+        this.cdr.markForCheck();
       },
     });
   }
 
-  loadRestaurants(): void {
-    this.restaurantService.getRestaurants().subscribe({
-      next: (data) => {
-        this.restaurants = data;
-        this.filteredRestaurants = data;
+  loadRestaurants(forceRefresh: boolean = false): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
 
-        const cuisineSet = new Set<string>();
-        data.forEach((r) => {
-          if (r.cuisine) {
-            cuisineSet.add(r.cuisine);
-          }
-        });
-        this.cuisines = ['ALL', ...Array.from(cuisineSet)];
+    this.restaurantService
+      .getRestaurants(forceRefresh)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (data) => {
+          this.restaurants = data || [];
+          this.filteredRestaurants = data || [];
 
-        data.forEach((r) => {
-          this.restaurantService.getTablesByRestaurantId(r.id).subscribe((tables) => {
-            const availableCount = tables.filter((t) => t.available).length;
-            this.tableAvailability[r.id] = {
-              total: tables.length,
-              available: availableCount,
-            };
+          const cuisineSet = new Set<string>();
+          (data || []).forEach((r) => {
+            if (r.cuisine) {
+              cuisineSet.add(r.cuisine);
+            }
           });
-        });
-      },
-    });
+          this.cuisines = ['ALL', ...Array.from(cuisineSet)];
+
+          (data || []).forEach((r) => {
+            this.restaurantService.getTablesByRestaurantId(r.id).subscribe((tables) => {
+              const availableCount = tables.filter((t) => t.available).length;
+              this.tableAvailability[r.id] = {
+                total: tables.length,
+                available: availableCount,
+              };
+              this.cdr.markForCheck();
+            });
+          });
+
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.errorMessage =
+            'Unable to connect to the restaurant concierge. Please ensure the backend is running at http://localhost:8080 and try again.';
+          console.error('[RestaurantList] Error loading restaurants from backend API:', err);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   filterRestaurants(): void {
@@ -140,6 +170,7 @@ export class RestaurantList implements OnInit {
 
       return matchesSearch && matchesCuisine;
     });
+    this.cdr.markForCheck();
   }
 
   onSearchChange(): void {
