@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { RestaurantMenu } from './restaurant-menu';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { MenuService } from '../../core/services/menu.service';
@@ -229,9 +229,10 @@ describe('RestaurantMenu', () => {
   });
 
   it('8. should display unavailable items with muted styling and "Currently Unavailable" tag', () => {
-    component.restaurant = mockRestaurant;
-    component.menuItems = mockMenuItems;
-    component.applyFilters();
+    vi.spyOn(restaurantService, 'getRestaurantById').mockReturnValue(of(mockRestaurant));
+    vi.spyOn(menuService, 'getMenuByRestaurantId').mockReturnValue(of(mockMenuItems));
+
+    component.loadRestaurantAndMenu(1);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -310,5 +311,48 @@ describe('RestaurantMenu', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Restaurant Not Found');
+  });
+
+  it('14. should handle API failure gracefully and show error banner with retry option', () => {
+    vi.spyOn(restaurantService, 'getRestaurantById').mockReturnValue(of(mockRestaurant));
+    vi.spyOn(menuService, 'getMenuByRestaurantId').mockReturnValue(throwError(() => new Error('Server Error 500')));
+
+    component.loadRestaurantAndMenu(1);
+    fixture.detectChanges();
+
+    expect(component.errorMessage).toBeTruthy();
+    expect(component.isLoading).toBe(false);
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Unable to load menu offerings');
+    expect(compiled.querySelector('.retry-btn')).toBeTruthy();
+  });
+
+  it('15. should trigger retryLoad and refresh menu on clicking retry button', () => {
+    const clearSpy = vi.spyOn(menuService, 'clearCache');
+    const loadSpy = vi.spyOn(component, 'loadRestaurantAndMenu');
+
+    component.restaurantId = 1;
+    component.retryLoad();
+
+    expect(clearSpy).toHaveBeenCalledWith(1);
+    expect(loadSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('16. should dismiss error banner when close button is clicked', () => {
+    vi.spyOn(restaurantService, 'getRestaurantById').mockReturnValue(of(mockRestaurant));
+    vi.spyOn(menuService, 'getMenuByRestaurantId').mockReturnValue(throwError(() => new Error('Network failure')));
+
+    component.loadRestaurantAndMenu(1);
+    fixture.detectChanges();
+
+    const closeBtn = fixture.nativeElement.querySelector('.banner-close-btn') as HTMLButtonElement;
+    expect(closeBtn).toBeTruthy();
+
+    closeBtn.click();
+    fixture.detectChanges();
+
+    expect(component.errorMessage).toBe('');
+    expect(fixture.nativeElement.querySelector('.error-banner-text')).toBeFalsy();
   });
 });

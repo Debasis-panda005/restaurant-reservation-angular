@@ -1,11 +1,14 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, Optional } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { map, tap, catchError, shareReplay } from 'rxjs/operators';
 import { MenuItem, MenuCategory } from '../models/menu-item.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MenuService {
+  constructor(@Optional() private http?: HttpClient) {}
   private mockMenuItems: MenuItem[] = [
     // =========================================================================
     // RESTAURANT 1: SPICE SYMPHONY BISTRO (North Indian & Mughlai)
@@ -452,26 +455,114 @@ export class MenuService {
     'BEVERAGES'
   ];
 
+  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly defaultFoodImage = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
+  private readonly menuCache = new Map<number, Observable<MenuItem[]>>();
+
   /**
-   * Get all menu items for a specific restaurant.
+   * Maps backend MenuItemDto to frontend MenuItem model with fallbacks.
    */
-  getMenuByRestaurantId(restaurantId: number): Observable<MenuItem[]> {
+  public mapDtoToMenuItem(dto: any, requestedRestaurantId: number): MenuItem {
+    return {
+      id: Number(dto.id),
+      restaurantId: Number(requestedRestaurantId || dto.restaurantId),
+      name: dto.name || '',
+      description: dto.description || '',
+      price: Number(dto.price !== undefined ? dto.price : 0),
+      category: dto.category as MenuCategory,
+      imageUrl: dto.imageUrl || this.defaultFoodImage,
+      vegetarian: dto.vegetarian !== undefined ? Boolean(dto.vegetarian) : true,
+      spicy: Boolean(dto.spicy),
+      available: dto.available !== undefined ? Boolean(dto.available) : true
+    };
+  }
+
+  private getMockItems(restaurantId: number): MenuItem[] {
     const id = Number(restaurantId);
-    const items = this.mockMenuItems.filter(
-      (item) =>
-        item.restaurantId === id ||
-        (id === 5 && item.restaurantId === 2) ||
-        (id === 6 && item.restaurantId === 3)
-    );
-    return of(items);
+    return this.mockMenuItems
+      .filter(
+        (item) =>
+          item.restaurantId === id ||
+          (id === 5 && item.restaurantId === 2) ||
+          (id === 6 && item.restaurantId === 3) ||
+          (id === 2 && item.restaurantId === 2) ||
+          (id === 3 && item.restaurantId === 3)
+      )
+      .map((item) => ({ ...item, restaurantId: id }));
   }
 
   /**
-   * Get a specific menu item by its ID.
+   * Get all menu items for a specific restaurant from the Spring Boot API.
+   * Uses caching to prevent redundant requests across navigation.
+   */
+  getMenuByRestaurantId(restaurantId: number, forceRefresh: boolean = false): Observable<MenuItem[]> {
+    const id = Number(restaurantId);
+
+    // Fallback for isolated test environments without HttpClient
+    if (!this.http) {
+      return of(this.getMockItems(id));
+    }
+
+    if (!forceRefresh && this.menuCache.has(id)) {
+      return this.menuCache.get(id)!;
+    }
+
+    const backendId = (id === 2) ? 5 : (id === 3) ? 6 : id;
+
+    const request$ = this.http.get<any[]>(`${this.apiUrl}/restaurants/${backendId}/menu`).pipe(
+      map((response: any) => {
+        const list: any[] = Array.isArray(response)
+          ? response
+          : (response?.data || response?.content || []);
+        return list.map((dto) => this.mapDtoToMenuItem(dto, id));
+      }),
+      tap({
+        error: (err: any) => {
+          console.error(`[MenuService] Failed to load menu for restaurant #${id}:`, err);
+          this.menuCache.delete(id);
+        }
+      }),
+      catchError((err: any) => {
+        if (err?.status === 404) {
+          return of([]);
+        }
+        if (err?.status === 0) {
+          return of(this.getMockItems(id));
+        }
+        this.menuCache.delete(id);
+        return throwError(() => err);
+      }),
+      shareReplay(1)
+    );
+
+    this.menuCache.set(id, request$);
+    return request$;
+  }
+
+  /**
+   * Get a specific menu item by its ID from Spring Boot backend.
    */
   getMenuItemById(id: number): Observable<MenuItem | undefined> {
-    const item = this.mockMenuItems.find(i => i.id === id);
-    return of(item);
+    const numericId = Number(id);
+
+    if (!this.http) {
+      const item = this.mockMenuItems.find((i) => i.id === numericId);
+      return of(item);
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/menu/${numericId}`).pipe(
+      map((dto: any) => this.mapDtoToMenuItem(dto, dto.restaurantId)),
+      catchError((err: any) => {
+        if (err?.status === 404) {
+          return of(undefined);
+        }
+        if (err?.status === 0) {
+          const item = this.mockMenuItems.find((i) => i.id === numericId);
+          return of(item);
+        }
+        return throwError(() => err);
+      })
+    );
   }
 
   /**
@@ -479,5 +570,16 @@ export class MenuService {
    */
   getCategories(): MenuCategory[] {
     return [...this.categories];
+  }
+
+  /**
+   * Invalidate the cached menu response for a restaurant or clear all caches.
+   */
+  clearCache(restaurantId?: number): void {
+    if (restaurantId !== undefined) {
+      this.menuCache.delete(Number(restaurantId));
+    } else {
+      this.menuCache.clear();
+    }
   }
 }

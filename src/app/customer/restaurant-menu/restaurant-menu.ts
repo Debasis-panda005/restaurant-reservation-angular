@@ -32,6 +32,7 @@ export class RestaurantMenu implements OnInit, OnDestroy {
   isLoading: boolean = true;
   notFound: boolean = false;
   isMobileMenuOpen: boolean = false;
+  errorMessage: string = '';
 
   selectedCategory: string = 'ALL';
   searchQuery: string = '';
@@ -105,6 +106,7 @@ export class RestaurantMenu implements OnInit, OnDestroy {
   loadRestaurantAndMenu(id: number): void {
     this.isLoading = true;
     this.notFound = false;
+    this.errorMessage = '';
     this.cdr.markForCheck();
 
     this.restaurantService.getRestaurantById(id).subscribe({
@@ -128,6 +130,7 @@ export class RestaurantMenu implements OnInit, OnDestroy {
             this.menuItems = [];
             this.applyFilters();
             this.isLoading = false;
+            this.errorMessage = 'Unable to load menu offerings from the server. Please check your connection or try again.';
             this.cdr.markForCheck();
           }
         });
@@ -138,6 +141,18 @@ export class RestaurantMenu implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  retryLoad(): void {
+    if (this.restaurantId) {
+      this.menuService.clearCache(this.restaurantId);
+      this.loadRestaurantAndMenu(this.restaurantId);
+    }
+  }
+
+  dismissError(): void {
+    this.errorMessage = '';
+    this.cdr.markForCheck();
   }
 
   selectCategory(categoryKey: string): void {

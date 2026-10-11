@@ -75,6 +75,22 @@
       </a>
     </div>
 
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage" class="luxury-banner" style="border-left: 3px solid #E05A47; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(224, 90, 71, 0.12); padding: 0.85rem 1.25rem; border-radius: 6px;">
+      <div class="banner-content" style="display: flex; align-items: center; gap: 0.75rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E05A47" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span class="error-banner-text" style="color: #F8D7DA; font-size: 0.9rem;">{{ errorMessage }}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <button class="btn btn-secondary-dark retry-btn" (click)="retryLoad()" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+          Retry
+        </button>
+        <button class="banner-close-btn" (click)="dismissError()" aria-label="Dismiss error" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✕</button>
+      </div>
+    </div>
+
     <!-- 1. LOADING STATE -->
     <div *ngIf="isLoading" class="menu-state-container">
       <div class="pass-loading-spinner" aria-hidden="true"></div>

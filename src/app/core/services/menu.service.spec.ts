@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { MenuService } from './menu.service';
 
@@ -70,5 +72,102 @@ describe('MenuService', () => {
     expect(categories).toContain('RICE');
     expect(categories).toContain('DESSERTS');
     expect(categories).toContain('BEVERAGES');
+  });
+
+  describe('with HttpClient provided', () => {
+    let httpService: MenuService;
+    let httpMock: HttpTestingController;
+
+    beforeEach(() => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          MenuService,
+          provideHttpClient(),
+          provideHttpClientTesting()
+        ]
+      });
+      httpService = TestBed.inject(MenuService);
+      httpMock = TestBed.inject(HttpTestingController);
+    });
+
+    afterEach(() => {
+      httpMock.verify();
+    });
+
+    it('should fetch menu items from backend API', async () => {
+      const mockBackendItems = [
+        {
+          id: 501,
+          restaurantId: 1,
+          name: 'Paneer Tikka',
+          description: 'Spiced cottage cheese',
+          price: 350.0,
+          category: 'STARTERS',
+          imageUrl: '/images/501.jpg',
+          vegetarian: true,
+          spicy: true,
+          available: true
+        }
+      ];
+
+      const fetchPromise = firstValueFrom(httpService.getMenuByRestaurantId(1));
+
+      const req = httpMock.expectOne('http://localhost:8080/api/restaurants/1/menu');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockBackendItems);
+
+      const items = await fetchPromise;
+      expect(items.length).toBe(1);
+      expect(items[0].name).toBe('Paneer Tikka');
+      expect(items[0].price).toBe(350);
+      expect(items[0].category).toBe('STARTERS');
+    });
+
+    it('should reuse cached menu observable on subsequent calls', () => {
+      let callCount = 0;
+      httpService.getMenuByRestaurantId(1).subscribe(() => callCount++);
+      httpService.getMenuByRestaurantId(1).subscribe(() => callCount++);
+
+      const reqs = httpMock.match('http://localhost:8080/api/restaurants/1/menu');
+      expect(reqs.length).toBe(1);
+      reqs[0].flush([]);
+      expect(callCount).toBe(2);
+    });
+
+    it('should handle 404 response by returning an empty list', async () => {
+      const fetchPromise = firstValueFrom(httpService.getMenuByRestaurantId(999));
+
+      const req = httpMock.expectOne('http://localhost:8080/api/restaurants/999/menu');
+      req.flush({ message: 'Restaurant not found' }, { status: 404, statusText: 'Not Found' });
+
+      const items = await fetchPromise;
+      expect(items).toEqual([]);
+    });
+
+    it('should fetch single menu item by ID from backend', async () => {
+      const mockDto = {
+        id: 101,
+        restaurantId: 1,
+        name: 'Dahi Ke Kebab',
+        description: 'Hung curd patties',
+        price: 320,
+        category: 'STARTERS',
+        imageUrl: '/images/101.jpg',
+        vegetarian: true,
+        spicy: false,
+        available: true
+      };
+
+      const fetchPromise = firstValueFrom(httpService.getMenuItemById(101));
+
+      const req = httpMock.expectOne('http://localhost:8080/api/menu/101');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockDto);
+
+      const item = await fetchPromise;
+      expect(item).toBeTruthy();
+      expect(item?.name).toBe('Dahi Ke Kebab');
+    });
   });
 });

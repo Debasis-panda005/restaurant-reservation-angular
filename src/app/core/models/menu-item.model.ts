@@ -19,3 +19,16 @@ export interface MenuItem {
   spicy?: boolean;
   available: boolean;
 }
+
+export interface MenuItemDto {
+  id: number;
+  restaurantId: number;
+  name: string;
+  description: string;
+  price: number;
+  category: MenuCategory;
+  imageUrl?: string;
+  vegetarian?: boolean;
+  spicy?: boolean;
+  available?: boolean;
+}
