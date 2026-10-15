@@ -1,6 +1,8 @@
 export type QueueStatusType =
+  | 'TICKET_ISSUED'
   | 'WAITING'
   | 'NOTIFIED'
+  | 'TABLE_READY'
   | 'SERVING'
   | 'SEATED'
   | 'COMPLETED'
@@ -14,6 +16,7 @@ export interface QueueTicket {
   customerName?: string;
   restaurantId: number;
   restaurantName?: string;
+  reservationId?: number;
   queueNumber?: string;
   ticketNumber: string;
   partySize?: number;
@@ -29,6 +32,7 @@ export interface QueueTicket {
 export interface QueueJoinRequest {
   restaurantId: number;
   partySize: number;
+  reservationId?: number;
 }
 
 export interface QueueStatusResponse {
@@ -39,6 +43,7 @@ export interface QueueStatusResponse {
   customerName?: string;
   restaurantId: number;
   restaurantName?: string;
+  reservationId?: number;
   partySize: number;
   guests?: number;
   status: QueueStatusType;

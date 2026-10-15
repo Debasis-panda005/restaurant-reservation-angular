@@ -401,7 +401,8 @@ describe('RestaurantReview', () => {
         restaurantId: 2,
         reservationId: 1008,
         rating: 5,
-      })
+      }),
+      resR2
     );
     expect(component.isSubmitted).toBe(true);
     expect(component.submittedReview?.restaurantId).toBe(2);
@@ -443,7 +444,8 @@ describe('RestaurantReview', () => {
         restaurantId: 3,
         reservationId: 1006,
         rating: 4,
-      })
+      }),
+      resR3
     );
     expect(component.isSubmitted).toBe(true);
     expect(component.submittedReview?.restaurantId).toBe(3);
@@ -470,5 +472,64 @@ describe('RestaurantReview', () => {
     expect(component.errorMessage).toContain(
       'You have already shared your experience for this reservation.'
     );
+  });
+
+  it('18. should reject whitespace-only comment in UI and show validation error', () => {
+    component.reservation = {
+      id: 1003,
+      customerId: 1,
+      restaurantId: 1,
+      tableId: 101,
+      date: '2026-09-20',
+      time: '19:00',
+      guests: 2,
+      status: 'COMPLETED',
+    };
+    component.selectedRating = 5;
+    component.comment = '             '; // Whitespace only
+
+    component.submitReview();
+
+    expect(component.validationError).toBe('Please provide a comment for your review.');
+    expect(component.isSubmitted).toBe(false);
+  });
+
+  it('19. should allow customer to change rating selection before submitting', () => {
+    component.setRating(5);
+    expect(component.selectedRating).toBe(5);
+    expect(component.currentRatingLabel).toBe('Excellent');
+
+    // Customer changes mind to 3 stars
+    component.setRating(3);
+    expect(component.selectedRating).toBe(3);
+    expect(component.currentRatingLabel).toBe('Good');
+
+    // Customer changes mind to 4 stars
+    component.setRating(4);
+    expect(component.selectedRating).toBe(4);
+    expect(component.currentRatingLabel).toBe('Very Good');
+  });
+
+  it('20. should clear hover rating on mouse leave', () => {
+    component.setRating(3);
+    component.setHoverRating(5);
+    expect(component.hoverRating).toBe(5);
+    expect(component.currentRatingLabel).toBe('Excellent');
+
+    component.clearHoverRating();
+    expect(component.hoverRating).toBe(0);
+    expect(component.currentRatingLabel).toBe('Good');
+  });
+
+  it('21. should handle direct navigation with invalid non-numeric route param safely', () => {
+    const route = TestBed.inject(ActivatedRoute);
+    (route as any).paramMap = of({
+      get: (key: string) => 'not-a-number',
+    });
+
+    component.ngOnInit();
+
+    expect(component.errorState).toBe('NOT_FOUND');
+    expect(component.isLoading).toBe(false);
   });
 });

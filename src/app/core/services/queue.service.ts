@@ -42,12 +42,16 @@ export class QueueService {
     guests?: number;
     partySize?: number;
     customerId?: number;
+    reservationId?: number;
   }): Observable<QueueTicket> {
     const guests = Number(ticketData.partySize || ticketData.guests || 2);
-    const payload = {
+    const payload: any = {
       restaurantId: Number(ticketData.restaurantId),
       partySize: guests
     };
+    if (ticketData.reservationId) {
+      payload.reservationId = Number(ticketData.reservationId);
+    }
 
     if (this.http) {
       return this.http.post<QueueStatusResponse>(`${this.apiUrl}/join`, payload).pipe(
@@ -199,6 +203,21 @@ export class QueueService {
   }
 
   /**
+   * Get queue ticket by ticket ID.
+   */
+  getTicketById(ticketId: number): Observable<QueueTicket | undefined> {
+    if (this.http) {
+      const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+      return this.http.get<QueueStatusResponse>(`${this.apiUrl}/${ticketId}/status`, { headers }).pipe(
+        map(dto => this.mapDtoToTicket(dto)),
+        catchError(err => throwError(() => err))
+      );
+    }
+    const ticket = this.mockTickets.find(q => q.id === ticketId);
+    return of(ticket);
+  }
+
+  /**
    * Refresh active queue status from backend.
    */
   refreshQueueStatus(customerId?: number): Observable<QueueTicket | undefined> {
@@ -234,6 +253,7 @@ export class QueueService {
       customerName: dto.customerName,
       restaurantId: dto.restaurantId,
       restaurantName: dto.restaurantName,
+      reservationId: dto.reservationId,
       queueNumber: dto.queueNumber || ticketNum,
       ticketNumber: ticketNum,
       partySize: dto.partySize !== undefined && dto.partySize !== null ? Number(dto.partySize) : guests,

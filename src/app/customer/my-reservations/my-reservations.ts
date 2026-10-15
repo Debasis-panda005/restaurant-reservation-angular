@@ -117,16 +117,31 @@ export class MyReservations implements OnInit {
         this.rawReservations = data || [];
         this.enrichReservations();
 
+        // Pre-populate reviewed reservations from the authenticated customer's review history
+        this.reviewService.getMyReviews().subscribe({
+          next: (myReviews) => {
+            (myReviews || []).forEach((rev) => {
+              if (rev.reservationId) {
+                this.reviewedReservationIds.add(Number(rev.reservationId));
+              }
+            });
+            this.cdr?.markForCheck();
+          },
+          error: () => {}
+        });
+
         // Check review submission status for completed reservations
         this.rawReservations.forEach((res) => {
-          this.reviewService.hasReviewedReservation(res.id).subscribe({
-            next: (reviewed) => {
-              if (reviewed) {
-                this.reviewedReservationIds.add(res.id);
-                this.cdr?.markForCheck();
-              }
-            },
-          });
+          if (res.status === 'COMPLETED') {
+            this.reviewService.hasReviewedReservation(res.id).subscribe({
+              next: (reviewed) => {
+                if (reviewed) {
+                  this.reviewedReservationIds.add(res.id);
+                  this.cdr?.markForCheck();
+                }
+              },
+            });
+          }
         });
       },
     });

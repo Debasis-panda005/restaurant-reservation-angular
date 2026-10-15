@@ -1,4 +1,4 @@
-import { Component, OnInit, Optional } from '@angular/core';
+import { Component, OnInit, Optional, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,7 +17,8 @@ export type ReviewErrorState =
   | 'UNAUTHORIZED'
   | 'NOT_COMPLETED'
   | 'CANCELLED'
-  | 'ALREADY_REVIEWED';
+  | 'ALREADY_REVIEWED'
+  | 'API_ERROR';
 
 @Component({
   selector: 'app-restaurant-review',
@@ -64,7 +65,8 @@ export class RestaurantReview implements OnInit {
     private restaurantService: RestaurantService,
     private reviewService: ReviewService,
     private authService: AuthService,
-    @Optional() private notificationService?: NotificationService
+    @Optional() private notificationService?: NotificationService,
+    @Optional() private cdr?: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -76,6 +78,7 @@ export class RestaurantReview implements OnInit {
       if (!idParam || isNaN(id)) {
         this.setErrorState('NOT_FOUND', 'Reservation Not Found');
         this.isLoading = false;
+        this.cdr?.markForCheck();
         return;
       }
 
@@ -90,6 +93,7 @@ export class RestaurantReview implements OnInit {
     this.notificationService?.getUnreadCount(customerId).subscribe({
       next: (count) => {
         this.unreadNotificationsCount = count;
+        this.cdr?.markForCheck();
       },
     });
   }
@@ -98,6 +102,7 @@ export class RestaurantReview implements OnInit {
     this.isLoading = true;
     this.errorState = 'NONE';
     this.errorMessage = '';
+    this.cdr?.markForCheck();
 
     const currentUser = this.authService.getCurrentUser();
     const currentCustomerId = currentUser ? currentUser.id : 1;
@@ -107,13 +112,15 @@ export class RestaurantReview implements OnInit {
         if (!res) {
           this.setErrorState('NOT_FOUND', 'Reservation Not Found');
           this.isLoading = false;
+          this.cdr?.markForCheck();
           return;
         }
 
         // Ownership verification
-        if (res.customerId !== currentCustomerId) {
+        if (Number(res.customerId) !== Number(currentCustomerId)) {
           this.setErrorState('UNAUTHORIZED', 'Reservation Not Found');
           this.isLoading = false;
+          this.cdr?.markForCheck();
           return;
         }
 
@@ -126,6 +133,7 @@ export class RestaurantReview implements OnInit {
             'Reviews are available only after completed dining experiences.'
           );
           this.isLoading = false;
+          this.cdr?.markForCheck();
           return;
         }
 
@@ -135,6 +143,7 @@ export class RestaurantReview implements OnInit {
             'Please complete your dining experience before leaving a review.'
           );
           this.isLoading = false;
+          this.cdr?.markForCheck();
           return;
         }
 
@@ -144,10 +153,11 @@ export class RestaurantReview implements OnInit {
             'Reviews are available only after completed dining experiences.'
           );
           this.isLoading = false;
+          this.cdr?.markForCheck();
           return;
         }
 
-        // Check if already reviewed
+        // Check if already reviewed via API
         this.reviewService.hasReviewedReservation(resId).subscribe({
           next: (alreadyReviewed) => {
             if (alreadyReviewed) {
@@ -156,45 +166,91 @@ export class RestaurantReview implements OnInit {
                 'You have already shared your experience for this reservation.'
               );
               this.isLoading = false;
+              this.cdr?.markForCheck();
               return;
             }
 
             // Load Restaurant Details
             this.restaurantService.getRestaurantById(res.restaurantId).subscribe({
               next: (rest) => {
-                this.restaurant = rest || null;
+                this.restaurant = rest || this.buildFallbackRestaurant(res);
                 this.isLoading = false;
+                this.cdr?.markForCheck();
               },
               error: () => {
+                this.restaurant = this.buildFallbackRestaurant(res);
                 this.isLoading = false;
+                this.cdr?.markForCheck();
               },
             });
           },
-          error: () => {
+          error: (err) => {
+            console.error('[RestaurantReview] Failed to check review status:', err);
+            this.setErrorState(
+              'API_ERROR',
+              'Unable to verify dining review status with the server. Please check your connection and retry.'
+            );
             this.isLoading = false;
+            this.cdr?.markForCheck();
           },
         });
       },
-      error: () => {
-        this.setErrorState('NOT_FOUND', 'Reservation Not Found');
+      error: (err) => {
+        console.error('[RestaurantReview] Failed to load reservation:', err);
+        const status = err?.status;
+        if (status === 403) {
+          this.setErrorState('UNAUTHORIZED', 'You are not authorized to view or review this reservation.');
+        } else if (status === 404) {
+          this.setErrorState('NOT_FOUND', 'Reservation Not Found');
+        } else {
+          this.setErrorState(
+            'API_ERROR',
+            'Unable to retrieve reservation details from the server. Please check your connection and retry.'
+          );
+        }
         this.isLoading = false;
+        this.cdr?.markForCheck();
       },
     });
+  }
+
+  private buildFallbackRestaurant(res: Reservation): Restaurant {
+    return {
+      id: res.restaurantId,
+      name: res.restaurantName || `Restaurant #${res.restaurantId}`,
+      location: 'Bhubaneswar, Odisha',
+      cuisine: 'Fine Dining & Gourmet',
+      description: 'Curated dining experience with artisanal preparations.',
+      openingTime: '11:00:00',
+      closingTime: '23:00:00',
+      rating: 4.8,
+      tagline: 'Imperial Flavors & Royal Dining',
+      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80'
+    };
+  }
+
+  retryLoading(): void {
+    if (this.reservationId) {
+      this.loadReservationAndCheckEligibility(this.reservationId);
+    }
   }
 
   setRating(star: number): void {
     if (star >= 1 && star <= 5) {
       this.selectedRating = star;
       this.validationError = '';
+      this.cdr?.markForCheck();
     }
   }
 
   setHoverRating(star: number): void {
     this.hoverRating = star;
+    this.cdr?.markForCheck();
   }
 
   clearHoverRating(): void {
     this.hoverRating = 0;
+    this.cdr?.markForCheck();
   }
 
   get currentRatingLabel(): string {
@@ -207,22 +263,31 @@ export class RestaurantReview implements OnInit {
 
     if (!this.selectedRating || this.selectedRating < 1 || this.selectedRating > 5) {
       this.validationError = 'Please select a star rating between 1 and 5.';
+      this.cdr?.markForCheck();
       return;
     }
 
     const trimmed = (this.comment || '').trim();
+    if (trimmed.length === 0) {
+      this.validationError = 'Please provide a comment for your review.';
+      this.cdr?.markForCheck();
+      return;
+    }
     if (trimmed.length < 10) {
       this.validationError = 'Please write at least 10 characters.';
+      this.cdr?.markForCheck();
       return;
     }
 
     if (trimmed.length > 500) {
       this.validationError = 'Review comment cannot exceed 500 characters.';
+      this.cdr?.markForCheck();
       return;
     }
 
     if (!this.reservation || this.reservation.status !== 'COMPLETED') {
       this.validationError = 'Only completed dining reservations can be reviewed.';
+      this.cdr?.markForCheck();
       return;
     }
 
@@ -231,6 +296,7 @@ export class RestaurantReview implements OnInit {
     const customerName = currentUser ? currentUser.name : 'Debasis Panda';
 
     this.isSubmitting = true;
+    this.cdr?.markForCheck();
 
     const newReviewData: Review = {
       id: Math.floor(1000 + Math.random() * 9000),
@@ -241,19 +307,28 @@ export class RestaurantReview implements OnInit {
       comment: trimmed,
       createdAt: new Date().toISOString().split('T')[0],
       customerName: customerName,
+      customerDisplayName: customerName,
     };
 
-    this.reviewService.createReview(newReviewData).subscribe({
-      next: (created) => {
-        this.isSubmitting = false;
-        this.isSubmitted = true;
-        this.submittedReview = created;
-      },
-      error: (err) => {
-        this.isSubmitting = false;
-        this.validationError = err.message || 'Failed to submit review. Please try again.';
-      },
-    });
+    try {
+      this.reviewService.createReview(newReviewData, this.reservation).subscribe({
+        next: (created) => {
+          this.isSubmitting = false;
+          this.isSubmitted = true;
+          this.submittedReview = created;
+          this.cdr?.markForCheck();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.validationError = err.message || 'Failed to submit review. Please try again.';
+          this.cdr?.markForCheck();
+        },
+      });
+    } catch (err: any) {
+      this.isSubmitting = false;
+      this.validationError = err.message || 'Failed to submit review. Please try again.';
+      this.cdr?.markForCheck();
+    }
   }
 
   goToRestaurant(): void {

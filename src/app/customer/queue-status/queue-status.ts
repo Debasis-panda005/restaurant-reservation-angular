@@ -37,6 +37,7 @@ export class QueueStatus implements OnInit, OnDestroy {
 
   // Quick Join Form
   selectedRestaurantId: number = 1;
+  selectedReservationId?: number;
   joinGuestsCount: number = 2;
 
   private destroy$ = new Subject<void>();
@@ -55,6 +56,12 @@ export class QueueStatus implements OnInit, OnDestroy {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['restaurantId']) {
         this.selectedRestaurantId = Number(params['restaurantId']);
+      }
+      if (params['reservationId']) {
+        this.selectedReservationId = Number(params['reservationId']);
+      }
+      if (params['guests']) {
+        this.joinGuestsCount = Number(params['guests']);
       }
     });
 
@@ -120,17 +127,39 @@ export class QueueStatus implements OnInit, OnDestroy {
 
     this.queueService.getQueueStatus(customerId).subscribe({
       next: (ticket) => {
-        this.isLoading = false;
-        this.isPollingPaused = false;
-        const now = new Date();
-        this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        this.currentTicket = ticket || null;
-        if (this.currentTicket) {
+        if (ticket) {
+          this.isLoading = false;
+          this.isPollingPaused = false;
+          const now = new Date();
+          this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          this.currentTicket = ticket;
           this.fetchRestaurant(this.currentTicket.restaurantId);
+          this.cdr.markForCheck();
         } else {
-          this.restaurant = null;
+          this.queueService.getMyQueue().subscribe({
+            next: (history) => {
+              this.isLoading = false;
+              this.isPollingPaused = false;
+              const now = new Date();
+              this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              const recent = history && history.length > 0 ? history[0] : null;
+              if (recent && (recent.status === 'SEATED' || recent.status === 'COMPLETED')) {
+                this.currentTicket = recent;
+                this.fetchRestaurant(recent.restaurantId);
+              } else {
+                this.currentTicket = null;
+                this.restaurant = null;
+              }
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.isLoading = false;
+              this.currentTicket = null;
+              this.restaurant = null;
+              this.cdr.markForCheck();
+            }
+          });
         }
-        this.cdr.markForCheck();
       },
       error: (err) => {
         this.handleQueueError(err, false);
@@ -163,41 +192,71 @@ export class QueueStatus implements OnInit, OnDestroy {
     const user = this.authService.getCurrentUser();
     const customerId = user ? user.id : 1;
 
-    this.queueService.advanceQueue(customerId).subscribe({
+    const existingTicket = this.currentTicket;
+
+    this.queueService.getQueueStatus(customerId).subscribe({
       next: (ticket) => {
-        this.isRefreshing = false;
-        this.isLoading = false;
-        this.isPollingPaused = false;
-        const now = new Date();
-        this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        this.currentTicket = ticket || null;
-        if (this.currentTicket) {
-          this.fetchRestaurant(this.currentTicket.restaurantId);
-          if (this.currentTicket.status === 'NOTIFIED' || this.currentTicket.status === 'SERVING') {
-            this.notificationMessage = '🎉 Great news! Your table is ready. Please proceed to the maître d\' desk!';
-          } else if (!silent) {
-            this.notificationMessage = `Queue status refreshed: #${this.queuePosition} in line (${this.currentTicket.peopleAhead} parties ahead, ~${this.currentTicket.estimatedWaitMinutes}m wait).`;
-            setTimeout(() => {
-              this.notificationMessage = '';
-              this.cdr.markForCheck();
-            }, 3500);
-          }
+        if (ticket) {
+          this.applyTicket(ticket, silent);
+        } else if (existingTicket && existingTicket.status !== 'CANCELLED' && typeof this.queueService.getTicketById === 'function') {
+          this.queueService.getTicketById(existingTicket.id).subscribe({
+            next: (updated) => {
+              if (updated && (updated.status === 'SEATED' || updated.status === 'COMPLETED')) {
+                this.applyTicket(updated, silent);
+              } else {
+                this.applyNoTicket(silent);
+              }
+            },
+            error: () => this.applyNoTicket(silent)
+          });
         } else {
-          this.restaurant = null;
-          if (!silent) {
-            this.notificationMessage = 'No active waitlist ticket found.';
-            setTimeout(() => {
-              this.notificationMessage = '';
-              this.cdr.markForCheck();
-            }, 3500);
-          }
+          this.applyNoTicket(silent);
         }
-        this.cdr.markForCheck();
       },
       error: (err) => {
         this.handleQueueError(err, silent);
       }
     });
+  }
+
+  private applyTicket(ticket: QueueTicket, silent: boolean): void {
+    this.isLoading = false;
+    this.isRefreshing = false;
+    this.isPollingPaused = false;
+    const now = new Date();
+    this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    this.currentTicket = ticket;
+    this.fetchRestaurant(ticket.restaurantId);
+    if (ticket.status === 'NOTIFIED' || ticket.status === 'SERVING') {
+      this.notificationMessage = '🎉 Great news! Your table is ready. Please proceed to the maître d\' desk!';
+    } else if (ticket.status === 'SEATED' || ticket.status === 'COMPLETED') {
+      this.notificationMessage = '🎉 You are seated! Enjoy your dining experience.';
+    } else if (!silent) {
+      this.notificationMessage = `Queue status refreshed: #${this.queuePosition} in line (${ticket.peopleAhead} parties ahead, ~${ticket.estimatedWaitMinutes}m wait).`;
+      setTimeout(() => {
+        this.notificationMessage = '';
+        this.cdr.markForCheck();
+      }, 3500);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private applyNoTicket(silent: boolean): void {
+    this.isLoading = false;
+    this.isRefreshing = false;
+    this.isPollingPaused = false;
+    const now = new Date();
+    this.lastRefreshedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    this.currentTicket = null;
+    this.restaurant = null;
+    if (!silent) {
+      this.notificationMessage = 'No active waitlist ticket found.';
+      setTimeout(() => {
+        this.notificationMessage = '';
+        this.cdr.markForCheck();
+      }, 3500);
+    }
+    this.cdr.markForCheck();
   }
 
   private handleQueueError(err: any, isSilent: boolean): void {
@@ -278,7 +337,8 @@ export class QueueStatus implements OnInit, OnDestroy {
         customerId: customerId,
         restaurantId: Number(this.selectedRestaurantId),
         partySize: Number(this.joinGuestsCount),
-        guests: Number(this.joinGuestsCount)
+        guests: Number(this.joinGuestsCount),
+        reservationId: this.selectedReservationId
       })
       .subscribe({
         next: (ticket) => {
@@ -310,19 +370,32 @@ export class QueueStatus implements OnInit, OnDestroy {
     if (this.currentTicket.position !== undefined && this.currentTicket.position !== null && this.currentTicket.position > 0) {
       return this.currentTicket.position;
     }
-    if (this.currentTicket.status === 'NOTIFIED' || this.currentTicket.status === 'SERVING') return 1;
+    if (this.currentTicket.status === 'NOTIFIED' || this.currentTicket.status === 'TABLE_READY' || this.currentTicket.status === 'SERVING') return 1;
     return (this.currentTicket.peopleAhead ?? 0) + 1;
   }
 
   get progressPercentage(): number {
     if (!this.currentTicket) return 0;
-    if (this.currentTicket.status === 'CANCELLED' || this.currentTicket.status === 'LEFT') return 0;
-    if (this.currentTicket.status === 'COMPLETED' || this.currentTicket.status === 'SEATED') return 100;
-    if (this.currentTicket.status === 'NOTIFIED' || this.currentTicket.status === 'SERVING') return 85;
-    if (this.currentTicket.peopleAhead === 0) return 70;
-    if (this.currentTicket.peopleAhead === 1) return 50;
-    if (this.currentTicket.peopleAhead === 2) return 35;
-    return 20;
+    switch (this.currentTicket.status) {
+      case 'CANCELLED':
+      case 'LEFT':
+        return 0;
+      case 'TICKET_ISSUED':
+        return 0;
+      case 'WAITING':
+        return 25;
+      case 'NOTIFIED':
+      case 'TABLE_READY':
+      case 'SERVING':
+      case 'CALLED':
+        return 50;
+      case 'SEATED':
+        return 75;
+      case 'COMPLETED':
+        return 100;
+      default:
+        return 0;
+    }
   }
 
   formatJoinedTime(dateString?: string): string {

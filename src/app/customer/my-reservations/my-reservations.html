@@ -212,7 +212,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#0D0D0C" stroke="#0D0D0C" stroke-width="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            <span>Rate Your Experience</span>
+            <span>Write Review</span>
           </button>
 
           <!-- Review Submitted Indicator (COMPLETED & Already Reviewed) -->
@@ -225,6 +225,22 @@
             </svg>
             <span>Review Submitted</span>
           </div>
+
+          <a
+            *ngIf="res.status === 'CONFIRMED'"
+            class="btn btn-outline-gold"
+            style="font-size: 0.74rem; padding: 0.45rem 0.85rem; width: 100%; gap: 0.4rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;"
+            [routerLink]="['/customer/queue']"
+            [queryParams]="{ restaurantId: res.restaurantId, reservationId: res.id, guests: res.guests }"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Join Live Queue</span>
+          </a>
 
           <button
             *ngIf="res.status === 'CONFIRMED'"

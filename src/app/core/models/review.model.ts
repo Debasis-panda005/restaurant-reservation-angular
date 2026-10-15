@@ -7,4 +7,5 @@ export interface Review {
   comment: string;
   createdAt: string;
   customerName?: string;
+  customerDisplayName?: string;
 }

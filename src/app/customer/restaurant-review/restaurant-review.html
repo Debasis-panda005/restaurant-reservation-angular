@@ -118,11 +118,20 @@
       <!-- State: Not Found or Unauthorized -->
       <div *ngIf="errorState === 'NOT_FOUND' || errorState === 'UNAUTHORIZED'">
         <h2 class="review-state-title">Reservation Not Found</h2>
-        <p class="review-state-desc">The requested dining booking could not be verified or retrieved.</p>
+        <p class="review-state-desc">{{ errorMessage || 'The requested dining booking could not be verified or retrieved.' }}</p>
       </div>
 
-      <div style="margin-top: 2rem;">
-        <button class="btn btn-gold" (click)="goToReservations()">
+      <!-- State: API / Connection Error -->
+      <div *ngIf="errorState === 'API_ERROR'">
+        <h2 class="review-state-title">Verification Unavailable</h2>
+        <p class="review-state-desc">{{ errorMessage || 'Unable to retrieve reservation verification details from the server.' }}</p>
+      </div>
+
+      <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+        <button *ngIf="errorState === 'API_ERROR'" class="btn btn-gold" (click)="retryLoading()">
+          <span>↻ Retry Verification</span>
+        </button>
+        <button class="btn" [ngClass]="errorState === 'API_ERROR' ? 'btn-outline-gold' : 'btn-gold'" (click)="goToReservations()">
           <span>Back to My Reservations</span>
         </button>
       </div>

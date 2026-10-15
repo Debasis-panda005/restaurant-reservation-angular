@@ -208,4 +208,79 @@ describe('MyReservations', () => {
     expect(booking?.seatingType).toBe('ROOFTOP');
     expect(booking?.restaurantName).toBe('Skyline Terrace');
   });
+
+  it('should render Write Review action for eligible completed unreviewed reservations', () => {
+    component['rawReservations'] = [
+      {
+        id: 1003,
+        customerId: 1,
+        restaurantId: 1,
+        tableId: 1,
+        date: '2026-09-20',
+        time: '19:00',
+        guests: 2,
+        status: 'COMPLETED',
+      }
+    ];
+    component.enrichReservations();
+    component.reviewedReservationIds.clear();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Write Review');
+    expect(compiled.textContent).not.toContain('Review Submitted');
+  });
+
+  it('should render Review Submitted tag for completed already-reviewed reservations', () => {
+    component['rawReservations'] = [
+      {
+        id: 1004,
+        customerId: 1,
+        restaurantId: 2,
+        tableId: 2,
+        date: '2026-09-12',
+        time: '20:30',
+        guests: 2,
+        status: 'COMPLETED',
+      }
+    ];
+    component.enrichReservations();
+    component.reviewedReservationIds.clear();
+    component.reviewedReservationIds.add(1004);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Review Submitted');
+    expect(compiled.textContent).not.toContain('Write Review');
+  });
+
+  it('should NOT render Write Review action for CONFIRMED or CANCELLED reservations', () => {
+    component['rawReservations'] = [
+      {
+        id: 1001,
+        customerId: 1,
+        restaurantId: 1,
+        tableId: 1,
+        date: '2026-10-15',
+        time: '19:00',
+        guests: 2,
+        status: 'CONFIRMED',
+      },
+      {
+        id: 1005,
+        customerId: 1,
+        restaurantId: 1,
+        tableId: 1,
+        date: '2026-10-10',
+        time: '19:00',
+        guests: 2,
+        status: 'CANCELLED',
+      }
+    ];
+    component.enrichReservations();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Write Review');
+  });
 });

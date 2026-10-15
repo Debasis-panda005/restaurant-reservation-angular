@@ -144,15 +144,15 @@ describe('QueueStatus', () => {
   });
 
   it('should prevent overlapping requests in refreshStatus when already refreshing or loading', () => {
-    queueServiceMock.advanceQueue.mockClear();
+    queueServiceMock.getQueueStatus.mockClear();
     component.isRefreshing = true;
     component.refreshStatus(false);
-    expect(queueServiceMock.advanceQueue).not.toHaveBeenCalled();
+    expect(queueServiceMock.getQueueStatus).not.toHaveBeenCalled();
 
     component.isRefreshing = false;
     component.isLoading = true;
     component.refreshStatus(false);
-    expect(queueServiceMock.advanceQueue).not.toHaveBeenCalled();
+    expect(queueServiceMock.getQueueStatus).not.toHaveBeenCalled();
   });
 
   it('should refresh status and update queue metrics, lastRefreshedAt, and feedback message', () => {
@@ -163,12 +163,12 @@ describe('QueueStatus', () => {
       estimatedWaitMinutes: 5,
       status: 'WAITING'
     };
-    queueServiceMock.advanceQueue.mockReturnValue(of(updatedTicket));
+    queueServiceMock.getQueueStatus.mockReturnValue(of(updatedTicket));
 
     component.refreshStatus(false);
     fixture.detectChanges();
 
-    expect(queueServiceMock.advanceQueue).toHaveBeenCalledWith(1);
+    expect(queueServiceMock.getQueueStatus).toHaveBeenCalledWith(1);
     expect(component.currentTicket?.position).toBe(1);
     expect(component.currentTicket?.peopleAhead).toBe(0);
     expect(component.currentTicket?.estimatedWaitMinutes).toBe(5);
@@ -189,7 +189,7 @@ describe('QueueStatus', () => {
       peopleAhead: 0,
       estimatedWaitMinutes: 0
     };
-    queueServiceMock.advanceQueue.mockReturnValue(of(readyTicket));
+    queueServiceMock.getQueueStatus.mockReturnValue(of(readyTicket));
 
     component.refreshStatus(false);
     fixture.detectChanges();
@@ -199,7 +199,7 @@ describe('QueueStatus', () => {
   });
 
   it('should handle empty waitlist on refresh by clearing ticket and setting notification', () => {
-    queueServiceMock.advanceQueue.mockReturnValue(of(undefined));
+    queueServiceMock.getQueueStatus.mockReturnValue(of(undefined));
 
     component.refreshStatus(false);
     fixture.detectChanges();
@@ -209,7 +209,7 @@ describe('QueueStatus', () => {
   });
 
   it('should display error message when refresh fails', () => {
-    queueServiceMock.advanceQueue.mockReturnValue(throwError(() => ({
+    queueServiceMock.getQueueStatus.mockReturnValue(throwError(() => ({
       status: 500,
       error: { message: 'Server communication error' }
     })));
@@ -235,9 +235,9 @@ describe('QueueStatus', () => {
     expect(component.errorMessage).toContain('session has expired or authentication is required');
 
     // Subsequent silent refresh should be blocked while polling is paused
-    queueServiceMock.advanceQueue.mockClear();
+    queueServiceMock.getQueueStatus.mockClear();
     component.refreshStatus(true);
-    expect(queueServiceMock.advanceQueue).not.toHaveBeenCalled();
+    expect(queueServiceMock.getQueueStatus).not.toHaveBeenCalled();
   });
 
   it('should display access denied error and pause polling when receiving 403 Forbidden', () => {
@@ -267,36 +267,53 @@ describe('QueueStatus', () => {
     expect(component.errorMessage).toContain('Unable to connect to the live queue service');
   });
 
-  it('should recalculate progressPercentage and queuePosition dynamically for each queue lifecycle status', () => {
-    // WAITING with 2 ahead
+  it('should calculate progressPercentage dynamically from backend QueueStatus without hardcoding 70%', () => {
+    // Null ticket
+    component.currentTicket = null;
+    expect(component.progressPercentage).toBe(0);
+
+    // TICKET_ISSUED -> 0%
+    component.currentTicket = { ...mockTicket, status: 'TICKET_ISSUED' };
+    expect(component.progressPercentage).toBe(0);
+
+    // WAITING (in line) -> 25%
     component.currentTicket = { ...mockTicket, peopleAhead: 2, position: 3, status: 'WAITING' };
-    expect(component.progressPercentage).toBe(35);
+    expect(component.progressPercentage).toBe(25);
     expect(component.queuePosition).toBe(3);
 
-    // Advanced to 1 ahead
-    component.currentTicket = { ...mockTicket, peopleAhead: 1, position: 2, status: 'WAITING' };
-    expect(component.progressPercentage).toBe(50);
-    expect(component.queuePosition).toBe(2);
-
-    // Advanced to 0 ahead (next in line)
+    // WAITING with 0 ahead -> still 25% based on WAITING status (never hardcoded 50% or 70%)
     component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 1, status: 'WAITING' };
-    expect(component.progressPercentage).toBe(70);
+    expect(component.progressPercentage).toBe(25);
     expect(component.queuePosition).toBe(1);
 
-    // Table ready (NOTIFIED)
+    // Table ready (NOTIFIED, TABLE_READY or SERVING) -> 50%
     component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 1, status: 'NOTIFIED' };
-    expect(component.progressPercentage).toBe(85);
+    expect(component.progressPercentage).toBe(50);
     expect(component.queuePosition).toBe(1);
 
-    // Seated
+    component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 1, status: 'TABLE_READY' };
+    expect(component.progressPercentage).toBe(50);
+
+    component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 1, status: 'SERVING' };
+    expect(component.progressPercentage).toBe(50);
+
+    // Seated (dining in progress) -> 75%
     component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 0, status: 'SEATED' };
+    expect(component.progressPercentage).toBe(75);
+    expect(component.queuePosition).toBe(0);
+
+    // Completed -> 100%
+    component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 0, status: 'COMPLETED' };
     expect(component.progressPercentage).toBe(100);
     expect(component.queuePosition).toBe(0);
 
-    // Cancelled / Left
+    // Cancelled / Left -> 0%
     component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 0, status: 'CANCELLED' };
     expect(component.progressPercentage).toBe(0);
     expect(component.queuePosition).toBe(0);
+
+    component.currentTicket = { ...mockTicket, peopleAhead: 0, position: 0, status: 'LEFT' };
+    expect(component.progressPercentage).toBe(0);
   });
 
   it('should clean up polling subscriptions on destroy', () => {
@@ -305,5 +322,57 @@ describe('QueueStatus', () => {
     component.ngOnDestroy();
     expect(destroySpy).toHaveBeenCalled();
     expect(completeSpy).toHaveBeenCalled();
+  });
+
+  it('should render loading spinner while isLoading is true', () => {
+    component.isLoading = true;
+    component.currentTicket = null;
+    (component as any).cdr.markForCheck();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.queue-loading-state')).toBeTruthy();
+    expect(compiled.querySelector('.queue-spinner')).toBeTruthy();
+    expect(compiled.textContent).toContain('Connecting to digital concierge waitlist...');
+  });
+
+  it('should render empty state card with Join Waiting Queue button when there is no active ticket', () => {
+    component.isLoading = false;
+    component.currentTicket = null;
+    (component as any).cdr.markForCheck();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.queue-empty-card')).toBeTruthy();
+    expect(compiled.querySelector('.queue-join-form-wrapper')).toBeTruthy();
+    expect(compiled.textContent).toContain('Join Waiting Queue');
+    expect(compiled.textContent).toContain('No Active Waitlist Token');
+  });
+
+  it('should render error banner with error message when errorMessage is present', () => {
+    component.errorMessage = 'Service temporarily unavailable';
+    (component as any).cdr.markForCheck();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Service temporarily unavailable');
+  });
+
+  it('should synchronize progress percentage and journey steps correctly for WAITING and NOTIFIED', () => {
+    // WAITING: 25%
+    component.currentTicket = { ...mockTicket, status: 'WAITING' };
+    expect(component.progressPercentage).toBe(25);
+    (component as any).cdr.markForCheck();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('25%');
+
+    // NOTIFIED: 50%
+    component.currentTicket = { ...mockTicket, status: 'NOTIFIED' };
+    expect(component.progressPercentage).toBe(50);
+    (component as any).cdr.markForCheck();
+    fixture.detectChanges();
+    expect(compiled.textContent).toContain('50%');
   });
 });
