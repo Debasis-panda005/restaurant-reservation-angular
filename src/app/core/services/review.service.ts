@@ -369,7 +369,6 @@ export class ReviewService {
           const created = this.mapDtoToReview(dto, review.restaurantId);
           this.reviews.push(created);
           this.reviewedReservationIds.add(created.reservationId);
-          this.sendNotification(created);
           return created;
         }),
         catchError((err) => {

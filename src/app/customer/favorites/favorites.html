@@ -99,8 +99,41 @@
       <p style="color: var(--gold-light); font-size: 1rem; letter-spacing: 0.04em;">Retrieving your saved dining collection...</p>
     </div>
 
+    <!-- Error State -->
+    <div *ngIf="!isLoading && hasError" class="favorites-empty-card">
+      <div class="favorites-crest-icon">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+
+      <span class="eyebrow-pill" style="margin-bottom: 0.75rem; border-color: rgba(239, 167, 167, 0.35); color: #EFA7A7;">
+        <span>✦</span>
+        <span>SERVICE NOTICE</span>
+      </span>
+
+      <h2 style="font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem;">Unable to Load Favorites</h2>
+      <p style="color: var(--text-muted); font-size: 0.98rem; max-width: 480px; margin: 0 auto 2rem auto; line-height: 1.6;">
+        {{ errorMessage }}
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-gold" (click)="loadFavorites()" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>Try Again</span>
+        </button>
+        <button class="btn btn-secondary-dark" (click)="exploreRestaurants()">
+          <span>Explore Restaurants</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Favorite Restaurants Grid -->
-    <div *ngIf="!isLoading && favoriteRestaurants.length > 0" class="directory-cards-grid">
+    <div *ngIf="!isLoading && !hasError && favoriteRestaurants.length > 0" class="directory-cards-grid">
       <div *ngFor="let r of favoriteRestaurants" class="directory-restaurant-card">
 
         <!-- Prominent Image Box -->
@@ -116,13 +149,14 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            <span>{{ (ratings[r.id]?.rating || r.rating).toFixed(1) }}</span>
+            <span>{{ ((ratings[r.id]?.rating || r.rating || 4.8)).toFixed(1) }}</span>
           </div>
 
           <!-- Floating Favorite Heart Button (Filled Gold) -->
           <button
             type="button"
             class="card-favorite-btn is-favorited"
+            [disabled]="removingIds.has(r.id)"
             (click)="removeFavorite(r.id, $event)"
             aria-label="Remove restaurant from favorites"
             title="Remove from favorites"
@@ -141,7 +175,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
             </svg>
-            <span>{{ r.location }}</span>
+            <span>{{ r.location || r.address || 'Fine Dining Venue' }}</span>
           </div>
 
           <p class="directory-card-desc">{{ r.description }}</p>
@@ -180,7 +214,7 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="!isLoading && favoriteRestaurants.length === 0" class="favorites-empty-card">
+    <div *ngIf="!isLoading && !hasError && favoriteRestaurants.length === 0" class="favorites-empty-card">
       <div class="favorites-crest-icon">
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A45C" stroke-width="1.5">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>

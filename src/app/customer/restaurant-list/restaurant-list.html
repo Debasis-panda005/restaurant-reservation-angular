@@ -126,6 +126,14 @@
     <!-- Main Directory Content (Loaded State) -->
     <div *ngIf="!isLoading && !errorMessage">
 
+      <!-- Favorite Toast / Feedback Banner -->
+      <div *ngIf="favoriteFeedbackMessage" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; background: rgba(201, 164, 92, 0.12); border: 1px solid rgba(201, 164, 92, 0.4); padding: 0.85rem 1.25rem; border-radius: 4px; color: var(--gold-light); font-size: 0.88rem; animation: fadeIn 0.25s ease;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#C9A45C" stroke="#C9A45C" stroke-width="1.5">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span>{{ favoriteFeedbackMessage }}</span>
+      </div>
+
       <!-- Results Counter -->
       <div style="font-size: 0.84rem; color: var(--text-dark); margin-bottom: 2rem;">
         Presenting <strong style="color: var(--gold-light);">{{ filteredRestaurants.length }}</strong> curated dining establishments
@@ -154,6 +162,7 @@
               type="button"
               class="card-favorite-btn"
               [class.is-favorited]="isFavorite(r.id)"
+              [disabled]="togglingFavoriteIds.has(r.id)"
               (click)="toggleFavorite(r.id, $event)"
               [attr.aria-label]="isFavorite(r.id) ? 'Remove restaurant from favorites' : 'Add restaurant to favorites'"
               [attr.title]="isFavorite(r.id) ? 'Remove from favorites' : 'Save to favorites'"

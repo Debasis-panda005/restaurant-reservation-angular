@@ -12,6 +12,7 @@ describe('RestaurantList', () => {
   let component: RestaurantList;
   let fixture: ComponentFixture<RestaurantList>;
   let restaurantService: RestaurantService;
+  let favoriteService: FavoriteService;
 
   const mockRestaurants: Restaurant[] = [
     {
@@ -65,11 +66,17 @@ describe('RestaurantList', () => {
     }).compileComponents();
 
     restaurantService = TestBed.inject(RestaurantService);
+    favoriteService = TestBed.inject(FavoriteService);
     vi.spyOn(restaurantService, 'getRestaurants').mockReturnValue(of(mockRestaurants));
+    vi.spyOn(favoriteService, 'getFavoritesByCustomerId').mockReturnValue(of([]));
 
     fixture = TestBed.createComponent(RestaurantList);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should create the component', () => {
@@ -104,13 +111,45 @@ describe('RestaurantList', () => {
   it('should toggle favorite status of a restaurant', () => {
     const fakeEvent = new MouseEvent('click');
     vi.spyOn(fakeEvent, 'stopPropagation');
+    vi.spyOn(favoriteService, 'toggleFavorite').mockReturnValue(of(true));
 
     const restId = 5;
-    const initialStatus = component.isFavorite(restId);
     component.toggleFavorite(restId, fakeEvent);
 
     expect(fakeEvent.stopPropagation).toHaveBeenCalled();
-    expect(component.isFavorite(restId)).toBe(!initialStatus);
+    expect(component.isFavorite(restId)).toBe(true);
+    expect(component.favoriteFeedbackMessage).toContain('added to favorites');
+  });
+
+  it('should invoke favoriteService.toggleFavorite with correct restaurant ID and prevent duplicate clicks', () => {
+    const fakeEvent = new MouseEvent('click');
+    const toggleSpy = vi.spyOn(favoriteService, 'toggleFavorite').mockReturnValue(of(true));
+
+    const restId = 6;
+    component.toggleFavorite(restId, fakeEvent);
+
+    expect(toggleSpy).toHaveBeenCalledWith(1, 6);
+    expect(component.isFavorite(6)).toBe(true);
+
+    // Concurrent click should be ignored while in-flight
+    component.togglingFavoriteIds.add(6);
+    component.toggleFavorite(restId, fakeEvent);
+    expect(toggleSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should rollback favorite status and display error when toggle fails', () => {
+    const fakeEvent = new MouseEvent('click');
+    vi.spyOn(favoriteService, 'toggleFavorite').mockReturnValue(
+      throwError(() => ({ status: 500 }))
+    );
+
+    const restId = 5;
+    expect(component.isFavorite(restId)).toBe(false);
+    component.toggleFavorite(restId, fakeEvent);
+
+    // Rollback ensures state remains false
+    expect(component.isFavorite(restId)).toBe(false);
+    expect(component.favoriteFeedbackMessage).toContain('Unable to update favorites');
   });
 
   it('should handle error when API call fails and display diagnostic error message', () => {

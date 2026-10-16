@@ -9,6 +9,7 @@ import { ReservationQrService } from '../../core/services/reservation-qr.service
 import { Reservation } from '../../core/models/reservation.model';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 describe('RescheduleReservation', () => {
   let component: RescheduleReservation;
@@ -16,6 +17,7 @@ describe('RescheduleReservation', () => {
   let reservationService: ReservationService;
   let restaurantService: RestaurantService;
   let authService: AuthService;
+  let notificationService: NotificationService;
   let router: Router;
 
   const mockRestaurant: Restaurant = {
@@ -56,6 +58,7 @@ describe('RescheduleReservation', () => {
         RestaurantService,
         AuthService,
         ReservationQrService,
+        NotificationService,
         {
           provide: ActivatedRoute,
           useValue: {
@@ -73,6 +76,7 @@ describe('RescheduleReservation', () => {
     component = fixture.componentInstance;
     reservationService = TestBed.inject(ReservationService);
     restaurantService = TestBed.inject(RestaurantService);
+    notificationService = TestBed.inject(NotificationService);
     authService = TestBed.inject(AuthService);
     router = TestBed.inject(Router);
   });
@@ -300,5 +304,25 @@ describe('RescheduleReservation', () => {
 
     component.goToMyReservations();
     expect(navigateSpy).toHaveBeenCalledWith(['/customer/reservations']);
+  });
+
+  it('15. should refresh the notification list after backend confirms reschedule success', () => {
+    const refreshSpy = vi.spyOn(notificationService, 'refreshNotifications').mockReturnValue(of([]));
+    vi.spyOn(reservationService, 'updateReservation').mockReturnValue(of({
+      ...mockConfirmedReservation,
+      date: '2026-10-16',
+      time: '07:30 PM',
+      tableId: 101
+    }));
+
+    component.reservation = { ...mockConfirmedReservation };
+    component.selectedTable = { id: 101, restaurantId: 1, tableNumber: 'T-01', capacity: 2, seatingType: 'WINDOW', available: true };
+    component.newDate = '2026-10-16';
+    component.newTime = '07:30 PM';
+
+    component.confirmReschedule();
+
+    expect(component.rescheduleSuccess).toBe(true);
+    expect(refreshSpy).toHaveBeenCalled();
   });
 });

@@ -140,6 +140,7 @@
             class="btn"
             [class.btn-gold]="isFavoriteRestaurant"
             [class.btn-outline-gold]="!isFavoriteRestaurant"
+            [disabled]="isTogglingFavorite"
             (click)="toggleFavorite()"
             style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; padding: 0.55rem 1.2rem;"
             [attr.aria-label]="isFavoriteRestaurant ? 'Remove from favorites' : 'Add to favorites'"

@@ -1,4 +1,4 @@
-import { Component, OnInit, Optional } from '@angular/core';
+import { Component, OnInit, Optional, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FavoriteService } from '../../core/services/favorite.service';
@@ -22,8 +22,13 @@ export class Favorites implements OnInit {
   unreadNotificationsCount: number = 0;
 
   isLoading: boolean = true;
+  hasError: boolean = false;
+  errorMessage: string = '';
   feedbackMessage: string = '';
   isMobileMenuOpen: boolean = false;
+
+  // Active in-flight remove request tracking to prevent rapid duplicate clicks
+  removingIds: Set<number> = new Set<number>();
 
   private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,7 +38,8 @@ export class Favorites implements OnInit {
     private reviewService: ReviewService,
     private authService: AuthService,
     private router: Router,
-    @Optional() private notificationService?: NotificationService
+    @Optional() private notificationService?: NotificationService,
+    @Optional() private cdr?: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -47,20 +53,31 @@ export class Favorites implements OnInit {
     this.notificationService?.getUnreadCount(customerId).subscribe({
       next: (count) => {
         this.unreadNotificationsCount = count;
+        this.cdr?.markForCheck();
       },
     });
   }
 
+  /**
+   * Loads the authenticated customer's favorite restaurants via the backend API.
+   * Endpoints: GET /api/favorites/my
+   */
   loadFavorites(): void {
     this.isLoading = true;
+    this.hasError = false;
+    this.errorMessage = '';
+    this.cdr?.markForCheck();
+
     const currentUser = this.authService.getCurrentUser();
     const customerId = currentUser ? currentUser.id : 1;
 
     this.favoriteService.getFavoritesByCustomerId(customerId).subscribe({
       next: (favorites) => {
-        if (favorites.length === 0) {
+        if (!favorites || favorites.length === 0) {
           this.favoriteRestaurants = [];
           this.isLoading = false;
+          this.hasError = false;
+          this.cdr?.markForCheck();
           return;
         }
 
@@ -68,87 +85,154 @@ export class Favorites implements OnInit {
         let loadedCount = 0;
 
         favorites.forEach((fav) => {
-          this.restaurantService.getRestaurantById(fav.restaurantId).subscribe({
-            next: (rest) => {
-              loadedCount++;
-              if (rest) {
-                restaurantList.push(rest);
+          if (fav.restaurant) {
+            restaurantList.push(fav.restaurant);
+            this.loadRestaurantMetadata(fav.restaurant.id);
+            loadedCount++;
+            if (loadedCount === favorites.length) {
+              this.favoriteRestaurants = restaurantList;
+              this.isLoading = false;
+              this.hasError = false;
+              this.cdr?.markForCheck();
+            }
+          } else {
+            this.restaurantService.getRestaurantById(fav.restaurantId).subscribe({
+              next: (rest) => {
+                loadedCount++;
+                if (rest) {
+                  restaurantList.push(rest);
+                  this.loadRestaurantMetadata(rest.id);
+                }
 
-                // Load tables availability
-                this.restaurantService.getTablesByRestaurantId(rest.id).subscribe({
-                  next: (tables) => {
-                    const freeCount = tables.filter((t) => t.available).length;
-                    this.tableAvailability[rest.id] = {
-                      total: tables.length,
-                      available: freeCount,
-                    };
-                  },
-                });
-
-                // Load review rating & count
-                this.reviewService.getRestaurantRating(rest.id).subscribe({
-                  next: (rating) => {
-                    this.reviewService.getReviewCount(rest.id).subscribe({
-                      next: (count) => {
-                        this.ratings[rest.id] = {
-                          rating: rating > 0 ? rating : rest.rating,
-                          count: count,
-                        };
-                      },
-                    });
-                  },
-                });
-              }
-
-              if (loadedCount === favorites.length) {
-                this.favoriteRestaurants = restaurantList;
-                this.isLoading = false;
-              }
-            },
-            error: () => {
-              loadedCount++;
-              if (loadedCount === favorites.length) {
-                this.favoriteRestaurants = restaurantList;
-                this.isLoading = false;
-              }
-            },
-          });
+                if (loadedCount === favorites.length) {
+                  this.favoriteRestaurants = restaurantList;
+                  this.isLoading = false;
+                  this.hasError = false;
+                  this.cdr?.markForCheck();
+                }
+              },
+              error: () => {
+                loadedCount++;
+                if (loadedCount === favorites.length) {
+                  this.favoriteRestaurants = restaurantList;
+                  this.isLoading = false;
+                  this.hasError = false;
+                  this.cdr?.markForCheck();
+                }
+              },
+            });
+          }
         });
       },
-      error: () => {
+      error: (err) => {
         this.isLoading = false;
+        this.hasError = true;
         this.favoriteRestaurants = [];
+
+        if (err?.status === 401) {
+          this.errorMessage = 'Your session has expired. Please sign in to view your favorites.';
+        } else if (err?.status === 403) {
+          this.errorMessage = 'Access denied. You are not authorized to view favorites.';
+        } else if (err?.status === 404) {
+          this.errorMessage = 'The favorites service is currently unavailable.';
+        } else if (err?.status === 500) {
+          this.errorMessage = 'A server error occurred while retrieving your favorites. Please try again later.';
+        } else {
+          this.errorMessage = 'Unable to connect to the server. Please check your network connection.';
+        }
+        this.cdr?.markForCheck();
       },
     });
   }
 
+  private loadRestaurantMetadata(restaurantId: number): void {
+    // Load live table availability
+    this.restaurantService.getTablesByRestaurantId(restaurantId).subscribe({
+      next: (tables) => {
+        const freeCount = tables.filter((t) => t.available).length;
+        this.tableAvailability[restaurantId] = {
+          total: tables.length,
+          available: freeCount,
+        };
+        this.cdr?.markForCheck();
+      },
+    });
+
+    // Load review ratings & review count
+    this.reviewService.getRestaurantRating(restaurantId).subscribe({
+      next: (rating) => {
+        this.reviewService.getReviewCount(restaurantId).subscribe({
+          next: (count) => {
+            this.ratings[restaurantId] = {
+              rating: rating > 0 ? rating : 0,
+              count: count,
+            };
+            this.cdr?.markForCheck();
+          },
+        });
+      },
+    });
+  }
+
+  /**
+   * Remove a restaurant from the authenticated customer's favorites.
+   * Endpoint: DELETE /api/favorites/{restaurantId}
+   * Implements optimistic removal with rollback upon server error and in-flight click deduplication.
+   */
   removeFavorite(restaurantId: number, event?: Event): void {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
 
+    // Prevent duplicate requests caused by rapid repeated clicks
+    if (this.removingIds.has(restaurantId)) {
+      return;
+    }
+    this.removingIds.add(restaurantId);
+
     const currentUser = this.authService.getCurrentUser();
     const customerId = currentUser ? currentUser.id : 1;
 
     // Optimistically update the UI list
-    const removedRest = this.favoriteRestaurants.find((r) => r.id === restaurantId);
+    const originalIndex = this.favoriteRestaurants.findIndex((r) => r.id === restaurantId);
+    const removedRest = originalIndex !== -1 ? this.favoriteRestaurants[originalIndex] : undefined;
     this.favoriteRestaurants = this.favoriteRestaurants.filter((r) => r.id !== restaurantId);
+    this.cdr?.markForCheck();
 
     this.favoriteService.removeFavorite(customerId, restaurantId).subscribe({
       next: () => {
+        this.removingIds.delete(restaurantId);
         this.showFeedback(
           removedRest
             ? `${removedRest.name} removed from favorites.`
             : 'Removed from favorites'
         );
-      },
-      error: () => {
-        // Rollback on failure
-        if (removedRest) {
-          this.favoriteRestaurants.push(removedRest);
+        if (this.notificationService) {
+          this.notificationService.refreshNotifications().subscribe({ error: () => {} });
         }
-        this.showFeedback('Unable to remove favorite. Please try again.');
+        this.cdr?.markForCheck();
+      },
+      error: (err) => {
+        this.removingIds.delete(restaurantId);
+
+        // Rollback on failure: restore restaurant to its exact position
+        if (removedRest && originalIndex !== -1) {
+          this.favoriteRestaurants.splice(originalIndex, 0, removedRest);
+        }
+
+        if (err?.status === 401) {
+          this.showFeedback('Session expired. Please sign in again.');
+        } else if (err?.status === 403) {
+          this.showFeedback('You are not authorized to modify favorites.');
+        } else if (err?.status === 404) {
+          this.showFeedback('Restaurant not found in your favorites.');
+        } else if (err?.status === 500) {
+          this.showFeedback('Server error occurred. Could not remove favorite.');
+        } else {
+          this.showFeedback('Unable to remove favorite. Please try again.');
+        }
+        this.cdr?.markForCheck();
       },
     });
   }
@@ -184,7 +268,9 @@ export class Favorites implements OnInit {
     }
     this.feedbackTimer = setTimeout(() => {
       this.feedbackMessage = '';
+      this.cdr?.markForCheck();
     }, 3500);
+    this.cdr?.markForCheck();
   }
 }
 

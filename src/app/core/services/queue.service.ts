@@ -56,20 +56,6 @@ export class QueueService {
     if (this.http) {
       return this.http.post<QueueStatusResponse>(`${this.apiUrl}/join`, payload).pipe(
         map(dto => this.mapDtoToTicket(dto)),
-        tap(ticket => {
-          if (this.notificationService) {
-            this.notificationService.addNotification({
-              id: 0,
-              customerId: ticket.customerId,
-              type: 'QUEUE_UPDATE',
-              title: 'Queue Status Updated',
-              message: `You have joined the waitlist at ${ticket.restaurantName || 'the restaurant'}. Your pass token is #${ticket.ticketNumber}.`,
-              restaurantId: ticket.restaurantId,
-              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-              read: false
-            }).subscribe();
-          }
-        }),
         catchError(err => throwError(() => err))
       );
     }

@@ -1,6 +1,9 @@
+import { Restaurant } from './restaurant.model';
+
 export interface Favorite {
-  id: number;
-  customerId: number;
+  id?: number;
+  customerId?: number;
   restaurantId: number;
-  createdAt: string;
+  restaurant?: Restaurant;
+  createdAt?: string;
 }

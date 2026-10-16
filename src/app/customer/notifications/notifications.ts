@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import { NotificationService } from '../../core/services/notification.service';
 import { RestaurantService } from '../../core/services/restaurant.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -24,9 +25,15 @@ export class Notifications implements OnInit, OnDestroy {
   activeFilter: NotificationFilter = 'ALL';
   unreadCount: number = 0;
   isLoading: boolean = true;
+  hasError: boolean = false;
+  errorMessage: string = '';
   feedbackMessage: string = '';
   isMobileMenuOpen: boolean = false;
   restaurantNames: { [restaurantId: number]: string } = {};
+
+  // Duplicate click tracking
+  markingIds: Set<number> = new Set<number>();
+  isMarkingAll: boolean = false;
 
   private subscriptions: Subscription = new Subscription();
   private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
@@ -35,12 +42,31 @@ export class Notifications implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private restaurantService: RestaurantService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadRestaurantNames();
     this.loadNotifications();
+    this.subscribeToRealtimeUpdates();
+  }
+
+  private subscribeToRealtimeUpdates(): void {
+    const unreadSub = this.notificationService.unreadCount$.subscribe((count) => {
+      this.unreadCount = count;
+      this.cdr.markForCheck();
+    });
+    this.subscriptions.add(unreadSub);
+
+    const notifsSub = this.notificationService.notifications$.subscribe((items) => {
+      if (!this.isLoading && items) {
+        this.notifications = items;
+        this.applyFilter();
+        this.cdr.markForCheck();
+      }
+    });
+    this.subscriptions.add(notifsSub);
   }
 
   ngOnDestroy(): void {
@@ -56,38 +82,61 @@ export class Notifications implements OnInit, OnDestroy {
         restaurants.forEach((r) => {
           this.restaurantNames[r.id] = r.name;
         });
-      }
+        this.cdr.markForCheck();
+      },
+      error: () => {}
     });
     this.subscriptions.add(sub);
   }
 
   loadNotifications(): void {
     this.isLoading = true;
+    this.hasError = false;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+
     const currentUser = this.authService.getCurrentUser();
     const customerId = currentUser ? currentUser.id : 1;
 
-    // Subscribe to customer notifications stream
     const notifSub = this.notificationService
       .getNotificationsByCustomerId(customerId)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        })
+      )
       .subscribe({
         next: (items) => {
-          this.notifications = items;
+          this.notifications = items || [];
           this.applyFilter();
-          this.isLoading = false;
+          this.hasError = false;
+          this.cdr.markForCheck();
         },
-        error: () => {
-          this.isLoading = false;
+        error: (err) => {
+          this.hasError = true;
+          if (err?.status === 401) {
+            this.errorMessage = 'Your session has expired or full authentication is required. Please sign in to view notifications.';
+          } else if (err?.status === 403) {
+            this.errorMessage = 'You are not authorized to view these notifications.';
+          } else if (err?.status === 0) {
+            this.errorMessage = 'Unable to connect to the concierge service. Please check your internet connection and backend status.';
+          } else {
+            this.errorMessage = 'Unable to retrieve notifications at this time. Please try again.';
+          }
+          this.cdr.markForCheck();
         }
       });
     this.subscriptions.add(notifSub);
 
-    // Subscribe to unread count stream
     const unreadSub = this.notificationService
       .getUnreadCount(customerId)
       .subscribe({
         next: (count) => {
           this.unreadCount = count;
-        }
+          this.cdr.markForCheck();
+        },
+        error: () => {}
       });
     this.subscriptions.add(unreadSub);
   }
@@ -95,6 +144,7 @@ export class Notifications implements OnInit, OnDestroy {
   setFilter(filter: NotificationFilter): void {
     this.activeFilter = filter;
     this.applyFilter();
+    this.cdr.markForCheck();
   }
 
   applyFilter(): void {
@@ -124,7 +174,14 @@ export class Notifications implements OnInit, OnDestroy {
 
   onNotificationClick(notification: Notification): void {
     if (!notification.read) {
-      this.notificationService.markAsRead(notification.id).subscribe();
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          notification.read = true;
+          this.unreadCount = Math.max(0, this.unreadCount - 1);
+          this.applyFilter();
+          this.cdr.markForCheck();
+        }
+      });
     }
 
     // Context-sensitive navigation
@@ -144,15 +201,60 @@ export class Notifications implements OnInit, OnDestroy {
     if (event) {
       event.stopPropagation();
     }
-    this.notificationService.markAsRead(notification.id).subscribe();
+    if (notification.read || this.markingIds.has(notification.id)) {
+      return;
+    }
+
+    this.markingIds.add(notification.id);
+    this.cdr.markForCheck();
+
+    this.notificationService.markAsRead(notification.id).subscribe({
+      next: () => {
+        notification.read = true;
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
+        this.applyFilter();
+        this.markingIds.delete(notification.id);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.markingIds.delete(notification.id);
+        if (err?.status === 401) {
+          this.showFeedback('Session expired. Please sign in again.');
+        } else if (err?.status === 403) {
+          this.showFeedback('You are not authorized to modify this notification.');
+        } else {
+          this.showFeedback('Unable to mark notification as read.');
+        }
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   markAllAsRead(): void {
-    const currentUser = this.authService.getCurrentUser();
-    const customerId = currentUser ? currentUser.id : 1;
-    this.notificationService.markAllAsRead(customerId).subscribe({
+    if (this.isMarkingAll || this.unreadCount === 0) {
+      return;
+    }
+
+    this.isMarkingAll = true;
+    this.cdr.markForCheck();
+
+    this.notificationService.markAllAsRead().subscribe({
       next: () => {
+        this.notifications.forEach((n) => (n.read = true));
+        this.unreadCount = 0;
+        this.applyFilter();
+        this.isMarkingAll = false;
         this.showFeedback('All notifications marked as read.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.isMarkingAll = false;
+        if (err?.status === 401) {
+          this.showFeedback('Session expired. Please sign in again.');
+        } else {
+          this.showFeedback('Unable to mark all notifications as read.');
+        }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -163,18 +265,23 @@ export class Notifications implements OnInit, OnDestroy {
     }
     this.notificationService.deleteNotification(notificationId).subscribe({
       next: () => {
+        this.notifications = this.notifications.filter((n) => n.id !== notificationId);
+        this.applyFilter();
         this.showFeedback('Notification removed.');
+        this.cdr.markForCheck();
       }
     });
   }
 
   showFeedback(message: string): void {
     this.feedbackMessage = message;
+    this.cdr.markForCheck();
     if (this.feedbackTimer) {
       clearTimeout(this.feedbackTimer);
     }
     this.feedbackTimer = setTimeout(() => {
       this.feedbackMessage = '';
+      this.cdr.markForCheck();
     }, 3500);
   }
 

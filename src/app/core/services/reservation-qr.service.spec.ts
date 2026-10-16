@@ -21,7 +21,7 @@ describe('ReservationQrService', () => {
   });
 
   afterEach(() => {
-    httpTesting.verify();
+    httpTesting?.verify();
   });
 
   it('should be created', () => {

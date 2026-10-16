@@ -317,7 +317,6 @@ export class ReservationService {
         map((response) => {
           const created = this.mapDtoToReservation(response, reservationData);
           this.reservations.unshift(created);
-          this.sendConfirmationNotification(created);
           return created;
         }),
         catchError((err) => {
@@ -352,15 +351,6 @@ export class ReservationService {
           if (local) {
             local.status = 'CANCELLED';
           }
-          const customerId = response?.customerId || local?.customerId || 1;
-          const restaurantId = response?.restaurantId || local?.restaurantId || 1;
-
-          this.sendCancellationNotification({
-            id: numericId,
-            customerId,
-            restaurantId,
-          });
-
           return true;
         }),
         catchError((err) => {
@@ -399,15 +389,6 @@ export class ReservationService {
           if (local) {
             local.status = 'CANCELLED';
           }
-          const customerId = response?.customerId || local?.customerId || 1;
-          const restaurantId = response?.restaurantId || local?.restaurantId || 1;
-
-          this.sendCancellationNotification({
-            id: numericId,
-            customerId,
-            restaurantId,
-          });
-
           return true;
         }),
         catchError((err) => {
@@ -472,20 +453,6 @@ export class ReservationService {
             this.reservations[index] = updated;
           } else {
             this.reservations.unshift(updated);
-          }
-
-          if (this.notificationService) {
-            this.notificationService.addNotification({
-              id: 0,
-              customerId: updated.customerId,
-              type: 'RESERVATION_RESCHEDULED',
-              title: 'Reservation Rescheduled',
-              message: `Your reservation #${updated.id} has been successfully rescheduled to ${updated.date} at ${updated.time}.`,
-              reservationId: updated.id,
-              restaurantId: updated.restaurantId,
-              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-              read: false
-            }).subscribe();
           }
 
           return updated;

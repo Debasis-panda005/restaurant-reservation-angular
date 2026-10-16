@@ -231,6 +231,9 @@ export class MyReservations implements OnInit {
             this.applyFilter();
             // Refresh reservations from backend to synchronize server-side database state
             this.loadCustomerReservations();
+            if (this.notificationService) {
+              this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+            }
             this.cdr?.markForCheck();
             setTimeout(() => {
               this.notificationMessage = '';

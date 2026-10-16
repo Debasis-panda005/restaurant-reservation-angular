@@ -1,4 +1,4 @@
-import { Component, OnInit, Optional, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Optional, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,7 +16,7 @@ import { Restaurant } from '../../core/models/restaurant.model';
   templateUrl: './restaurant-list.html',
   styleUrl: './restaurant-list.css',
 })
-export class RestaurantList implements OnInit {
+export class RestaurantList implements OnInit, OnDestroy {
   restaurants: Restaurant[] = [];
   filteredRestaurants: Restaurant[] = [];
   searchQuery: string = '';
@@ -25,9 +25,13 @@ export class RestaurantList implements OnInit {
   tableAvailability: { [restaurantId: number]: { total: number; available: number } } = {};
   isMobileMenuOpen: boolean = false;
   favoriteRestaurantIds = new Set<number>();
+  togglingFavoriteIds = new Set<number>();
   unreadNotificationsCount: number = 0;
   isLoading: boolean = false;
   errorMessage: string = '';
+  favoriteFeedbackMessage: string = '';
+
+  private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private restaurantService: RestaurantService,
@@ -42,6 +46,12 @@ export class RestaurantList implements OnInit {
     this.loadRestaurants();
     this.loadFavorites();
     this.loadUnreadCount();
+  }
+
+  ngOnDestroy(): void {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+    }
   }
 
   loadUnreadCount(): void {
@@ -75,36 +85,71 @@ export class RestaurantList implements OnInit {
     event.stopPropagation();
     event.preventDefault();
 
+    if (this.togglingFavoriteIds.has(restaurantId)) {
+      return;
+    }
+    this.togglingFavoriteIds.add(restaurantId);
+
     const user = this.authService.getCurrentUser();
     const customerId = user ? user.id : 1;
 
     // Optimistic toggle
-    if (this.favoriteRestaurantIds.has(restaurantId)) {
+    const wasFavorite = this.favoriteRestaurantIds.has(restaurantId);
+    if (wasFavorite) {
       this.favoriteRestaurantIds.delete(restaurantId);
     } else {
       this.favoriteRestaurantIds.add(restaurantId);
     }
     this.cdr.markForCheck();
 
-    this.favoriteService.toggleFavorite(customerId, restaurantId).subscribe({
-      next: (isNowFav) => {
-        if (isNowFav) {
-          this.favoriteRestaurantIds.add(restaurantId);
-        } else {
-          this.favoriteRestaurantIds.delete(restaurantId);
-        }
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        // Rollback
-        if (this.favoriteRestaurantIds.has(restaurantId)) {
-          this.favoriteRestaurantIds.delete(restaurantId);
-        } else {
-          this.favoriteRestaurantIds.add(restaurantId);
-        }
-        this.cdr.markForCheck();
-      },
-    });
+    this.favoriteService
+      .toggleFavorite(customerId, restaurantId)
+      .pipe(
+        finalize(() => {
+          this.togglingFavoriteIds.delete(restaurantId);
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (isNowFav) => {
+          if (isNowFav) {
+            this.favoriteRestaurantIds.add(restaurantId);
+            this.showFavoriteFeedback('Restaurant added to favorites.');
+          } else {
+            this.favoriteRestaurantIds.delete(restaurantId);
+            this.showFavoriteFeedback('Restaurant removed from favorites.');
+          }
+          if (this.notificationService) {
+            this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          // Rollback
+          if (wasFavorite) {
+            this.favoriteRestaurantIds.add(restaurantId);
+          } else {
+            this.favoriteRestaurantIds.delete(restaurantId);
+          }
+          if (err?.status === 401) {
+            this.showFavoriteFeedback('Please sign in to save favorite restaurants.');
+          } else {
+            this.showFavoriteFeedback('Unable to update favorites. Please try again.');
+          }
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  showFavoriteFeedback(message: string): void {
+    this.favoriteFeedbackMessage = message;
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+    }
+    this.feedbackTimer = setTimeout(() => {
+      this.favoriteFeedbackMessage = '';
+      this.cdr.markForCheck();
+    }, 3500);
   }
 
   loadRestaurants(forceRefresh: boolean = false): void {

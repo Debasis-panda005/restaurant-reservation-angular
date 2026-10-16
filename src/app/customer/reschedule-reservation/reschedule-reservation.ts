@@ -375,6 +375,9 @@ export class RescheduleReservation implements OnInit {
         this.updatedReservation = updated;
         this.rescheduleSuccess = true;
         this.isReviewStep = false;
+        if (this.notificationService) {
+          this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {

@@ -305,6 +305,9 @@ export class QueueStatus implements OnInit, OnDestroy {
             this.notificationMessage = `You have left the queue. Ticket #${ticketNumber} has been cancelled.`;
             this.currentTicket = null;
             this.restaurant = null;
+            if (this.notificationService) {
+              this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+            }
             setTimeout(() => {
               this.notificationMessage = '';
               this.cdr.markForCheck();
@@ -346,6 +349,9 @@ export class QueueStatus implements OnInit, OnDestroy {
           this.currentTicket = ticket;
           this.fetchRestaurant(ticket.restaurantId);
           this.notificationMessage = `Joined waitlist successfully! Your priority pass token is #${ticket.ticketNumber || ticket.queueNumber}.`;
+          if (this.notificationService) {
+            this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+          }
           setTimeout(() => {
             this.notificationMessage = '';
             this.cdr.markForCheck();

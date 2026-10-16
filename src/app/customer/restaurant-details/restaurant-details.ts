@@ -32,6 +32,7 @@ export class RestaurantDetails implements OnInit {
 
   // Favorites State
   isFavoriteRestaurant: boolean = false;
+  isTogglingFavorite: boolean = false;
   unreadNotificationsCount: number = 0;
 
   // Reviews & Rating State
@@ -182,24 +183,40 @@ export class RestaurantDetails implements OnInit {
   }
 
   toggleFavorite(): void {
-    if (!this.restaurant) return;
+    if (!this.restaurant || this.isTogglingFavorite) return;
 
+    this.isTogglingFavorite = true;
     const user = this.authService.getCurrentUser();
     const customerId = user ? user.id : 1;
     const restaurantId = this.restaurant.id;
 
     // Optimistic toggle
-    this.isFavoriteRestaurant = !this.isFavoriteRestaurant;
+    const wasFav = this.isFavoriteRestaurant;
+    this.isFavoriteRestaurant = !wasFav;
+    this.cdr?.markForCheck();
 
-    this.favoriteService.toggleFavorite(customerId, restaurantId).subscribe({
-      next: (isNowFav) => {
-        this.isFavoriteRestaurant = isNowFav;
-      },
-      error: () => {
-        // Rollback on error
-        this.isFavoriteRestaurant = !this.isFavoriteRestaurant;
-      },
-    });
+    this.favoriteService
+      .toggleFavorite(customerId, restaurantId)
+      .pipe(
+        finalize(() => {
+          this.isTogglingFavorite = false;
+          this.cdr?.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (isNowFav) => {
+          this.isFavoriteRestaurant = isNowFav;
+          if (this.notificationService) {
+            this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+          }
+          this.cdr?.markForCheck();
+        },
+        error: () => {
+          // Rollback on error
+          this.isFavoriteRestaurant = wasFav;
+          this.cdr?.markForCheck();
+        },
+      });
   }
 
   loadReviewsAndRatings(restaurantId: number): void {
@@ -538,6 +555,9 @@ export class RestaurantDetails implements OnInit {
           }
           this.existingReservations.push(reservation);
           this.updateTableAvailability();
+          if (this.notificationService) {
+            this.notificationService.refreshNotifications().subscribe({ error: () => {} });
+          }
           this.cdr?.markForCheck();
         },
         error: (err) => {
