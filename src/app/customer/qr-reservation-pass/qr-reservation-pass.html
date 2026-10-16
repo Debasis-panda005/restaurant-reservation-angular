@@ -100,9 +100,9 @@
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
       </div>
-      <h2 class="pass-error-title">Reservation Not Found</h2>
+      <h2 class="pass-error-title">{{ errorTitle }}</h2>
       <p class="pass-error-desc">
-        We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.
+        {{ errorMessage }}
       </p>
       <div class="pass-error-actions">
         <button class="btn btn-gold" (click)="backToReservations()">
@@ -175,19 +175,20 @@
             </svg>
           </div>
 
-          <h1 class="pass-restaurant-name">{{ restaurant?.name || 'Exclusive Dining Venue' }}</h1>
+          <h1 class="pass-restaurant-name">{{ restaurant?.name || reservation.restaurantName || 'Exclusive Dining Venue' }}</h1>
 
-          <div *ngIf="restaurant?.location" class="pass-restaurant-loc">
+          <div *ngIf="restaurant?.location || restaurant?.address" class="pass-restaurant-loc">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
             </svg>
-            <span>{{ restaurant?.location }}</span>
+            <span>{{ restaurant?.location || restaurant?.address }}</span>
           </div>
 
           <div style="margin-top: 0.85rem;">
-            <span class="badge-status badge-confirmed">
-              <span>✓</span>
-              <span>RESERVATION CONFIRMED</span>
+            <span class="badge-status" [ngClass]="statusBadgeClass">
+              <span *ngIf="reservation.status === 'CONFIRMED' || reservation.status === 'CHECKED_IN' || reservation.status === 'COMPLETED'">✓</span>
+              <span *ngIf="reservation.status === 'PENDING'">⏳</span>
+              <span>{{ statusDisplayLabel }}</span>
             </span>
           </div>
         </div>
@@ -229,7 +230,7 @@
           <div class="pass-detail-cell">
             <span class="detail-label">Allocated Seating</span>
             <strong class="detail-val text-gold">
-              {{ table?.tableNumber ? (table.tableNumber.startsWith('Table') ? table.tableNumber : 'Table ' + table.tableNumber) : (reservation.tableNumber ? (reservation.tableNumber.startsWith('Table') ? reservation.tableNumber : 'Table ' + reservation.tableNumber) : ('Table #' + reservation.tableId)) }}
+              {{ formatTableDisplay() }}
               <span *ngIf="table?.seatingType || reservation.seatingType" style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">
                 ({{ table?.seatingType || reservation.seatingType }})
               </span>
@@ -286,16 +287,59 @@
           </div>
 
           <div class="pass-verification-tag">
-            <span>VERIFIED DIGITAL PASS</span>
+            <span>DIGITAL RESERVATION PASS</span>
             <span>&bull;</span>
             <span>RES-{{ reservation.id }}</span>
+          </div>
+
+          <!-- Server Verification Success Box (shown ONLY upon real backend verification confirmation) -->
+          <div *ngIf="verificationSuccess && verificationResult" class="pass-verified-result">
+            <div class="verified-result-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#93CFA0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span class="verified-result-title">QR PASS VERIFIED BY SERVER</span>
+            </div>
+            <p class="verified-result-message">{{ verificationResult.message || 'Reservation is valid and confirmed' }}</p>
+            <div class="verified-result-details">
+              <span>{{ verificationResult.restaurantName || restaurant?.name }}</span>
+              <span>&bull;</span>
+              <span>{{ verificationResult.tableNumber ? ('Table ' + verificationResult.tableNumber) : formatTableDisplay() }}</span>
+              <span>&bull;</span>
+              <span>{{ verificationResult.guests || reservation.guests }} Guests</span>
+            </div>
+          </div>
+
+          <!-- Server Verification Error Message Box -->
+          <div *ngIf="verificationError" class="pass-verify-error-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EFA7A7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ verificationError }}</span>
           </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="pass-actions-footer">
           <button
+            type="button"
             class="btn btn-gold pass-action-btn"
+            (click)="verifyPass()"
+            [disabled]="isVerifying || !reservation.qrToken"
+          >
+            <span *ngIf="isVerifying" class="pass-btn-spinner" aria-hidden="true"></span>
+            <svg *ngIf="!isVerifying" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
+            <span>{{ isVerifying ? 'Verifying...' : (verificationSuccess ? 'Re-Verify QR Pass' : 'Verify QR Pass') }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary-dark pass-action-btn"
             (click)="downloadPass()"
             [disabled]="!qrCodeUrl || isQrLoading"
           >
@@ -305,7 +349,7 @@
             <span>Download QR Pass</span>
           </button>
 
-          <button class="btn btn-secondary-dark pass-action-btn" (click)="backToReservations()">
+          <button type="button" class="btn btn-secondary-dark pass-action-btn pass-action-btn-full" (click)="backToReservations()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>

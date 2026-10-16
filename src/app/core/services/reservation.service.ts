@@ -272,9 +272,10 @@ export class ReservationService {
       time: dto.reservationTime || dto.time || fallback.time || '',
       guests: Number(dto.guests || fallback.guests || 2),
       status: dto.status || fallback.status || 'CONFIRMED',
-      tableNumber: dto.table?.tableNumber || fallback.tableNumber,
-      seatingType: dto.table?.seatingType || fallback.seatingType,
-      restaurantName: dto.restaurant?.name || fallback.restaurantName,
+      tableNumber: dto.table?.tableNumber || dto.tableNumber || fallback.tableNumber,
+      seatingType: dto.table?.seatingType || dto.seatingType || fallback.seatingType,
+      restaurantName: dto.restaurant?.name || dto.restaurantName || fallback.restaurantName,
+      customerName: dto.customer?.fullName || dto.customerName || fallback.customerName,
       qrToken: dto.qrToken || fallback.qrToken
     };
   }

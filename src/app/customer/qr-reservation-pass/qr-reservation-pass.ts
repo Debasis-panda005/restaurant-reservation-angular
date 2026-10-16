@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, Optional } from '@angu
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Reservation } from '../../core/models/reservation.model';
+import { Reservation, QrVerificationResponseDto } from '../../core/models/reservation.model';
 import { Restaurant } from '../../core/models/restaurant.model';
 import { Table } from '../../core/models/table.model';
 import { ReservationService } from '../../core/services/reservation.service';
@@ -31,9 +31,17 @@ export class QrReservationPass implements OnInit, OnDestroy {
   isQrLoading: boolean = false;    // Generating QR code data
   qrFailed: boolean = false;       // QR generation failed or unavailable
   notFound: boolean = false;
+  errorTitle: string = 'Reservation Not Found';
+  errorMessage: string = 'We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.';
   isCancelled: boolean = false;
   downloadSuccess: boolean = false;
   isMobileMenuOpen: boolean = false;
+
+  // Backend QR verification states
+  isVerifying: boolean = false;
+  verificationSuccess: boolean = false;
+  verificationResult: QrVerificationResponseDto | null = null;
+  verificationError: string | null = null;
 
   private routeSub?: Subscription;
   private activeLoadId: number | null = null;
@@ -79,8 +87,10 @@ export class QrReservationPass implements OnInit, OnDestroy {
   }
 
   private async handleParamId(idParam: string | null | undefined): Promise<void> {
-    if (!idParam || isNaN(Number(idParam))) {
+    if (!idParam || isNaN(Number(idParam)) || Number(idParam) <= 0) {
       this.notFound = true;
+      this.errorTitle = 'Invalid Reservation Reference';
+      this.errorMessage = 'The provided reservation reference is invalid. Please select a valid booking from your reservations list.';
       this.isLoading = false;
       this.isQrLoading = false;
       this.cdr.markForCheck();
@@ -107,9 +117,15 @@ export class QrReservationPass implements OnInit, OnDestroy {
     this.activeLoadId = reservationId;
     this.isLoading = true;
     this.notFound = false;
+    this.errorTitle = 'Reservation Not Found';
+    this.errorMessage = 'We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.';
     this.isCancelled = false;
     this.qrFailed = false;
     this.qrCodeUrl = '';
+    this.isVerifying = false;
+    this.verificationSuccess = false;
+    this.verificationResult = null;
+    this.verificationError = null;
     this.cdr.markForCheck();
 
     return new Promise((resolve) => {
@@ -117,6 +133,8 @@ export class QrReservationPass implements OnInit, OnDestroy {
         next: (res) => {
           if (!res) {
             this.notFound = true;
+            this.errorTitle = 'Reservation Not Found';
+            this.errorMessage = 'We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.';
             this.isLoading = false;
             this.isQrLoading = false;
             this.activeLoadId = null;
@@ -154,9 +172,16 @@ export class QrReservationPass implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           });
 
-          const currentUser = this.authService.getCurrentUser();
-          if (currentUser && currentUser.name) {
-            this.customerName = currentUser.name;
+          // Patron Name: prefer real response field customerName, else current user profile, else fallback
+          if (res.customerName) {
+            this.customerName = res.customerName;
+          } else {
+            const currentUser = this.authService.getCurrentUser();
+            if (currentUser && (currentUser.fullName || currentUser.name)) {
+              this.customerName = currentUser.fullName || currentUser.name;
+            } else {
+              this.customerName = 'Valued Patron';
+            }
           }
 
           // Cancelled reservations must not generate an active QR pass
@@ -175,8 +200,18 @@ export class QrReservationPass implements OnInit, OnDestroy {
             resolve();
           });
         },
-        error: () => {
+        error: (err) => {
           this.notFound = true;
+          if (err?.status === 403) {
+            this.errorTitle = 'Access Denied';
+            this.errorMessage = 'You are not authorized to view this reservation pass. Please access reservations from your own dining journal.';
+          } else if (err?.status === 404) {
+            this.errorTitle = 'Reservation Not Found';
+            this.errorMessage = 'We could not locate the requested reservation in our registry. Please verify your reservation ID or consult your dining journal.';
+          } else {
+            this.errorTitle = 'Unable to Load Pass';
+            this.errorMessage = 'A network or server error occurred while retrieving your reservation pass. Please try again.';
+          }
           this.isLoading = false;
           this.isQrLoading = false;
           this.activeLoadId = null;
@@ -185,6 +220,50 @@ export class QrReservationPass implements OnInit, OnDestroy {
         }
       });
     });
+  }
+
+  get statusDisplayLabel(): string {
+    switch (this.reservation?.status) {
+      case 'CONFIRMED':
+        return 'RESERVATION CONFIRMED';
+      case 'CHECKED_IN':
+        return 'CHECKED IN';
+      case 'PENDING':
+        return 'RESERVATION PENDING';
+      case 'COMPLETED':
+        return 'RESERVATION COMPLETED';
+      case 'CANCELLED':
+        return 'RESERVATION CANCELLED';
+      default:
+        return this.reservation?.status ? `RESERVATION ${this.reservation.status}` : 'RESERVATION CONFIRMED';
+    }
+  }
+
+  get statusBadgeClass(): string {
+    switch (this.reservation?.status) {
+      case 'CONFIRMED':
+      case 'CHECKED_IN':
+        return 'badge-confirmed';
+      case 'PENDING':
+        return 'badge-pending';
+      case 'COMPLETED':
+        return 'badge-completed';
+      case 'CANCELLED':
+        return 'badge-cancelled';
+      default:
+        return 'badge-confirmed';
+    }
+  }
+
+  formatTableDisplay(): string {
+    const tNum = this.table?.tableNumber || this.reservation?.tableNumber;
+    if (tNum) {
+      return tNum.toLowerCase().startsWith('table') ? tNum : `Table ${tNum}`;
+    }
+    if (this.reservation?.tableId) {
+      return `Table #${this.reservation.tableId}`;
+    }
+    return 'Unassigned Table';
   }
 
   /**
@@ -222,6 +301,79 @@ export class QrReservationPass implements OnInit, OnDestroy {
     if (this.reservation && this.reservation.status !== 'CANCELLED') {
       await this.generateQrCode(this.reservation);
     }
+  }
+
+  /**
+   * Performs authentic backend QR verification against POST /api/reservations/verify.
+   * Sends the reservation ID and the server-generated verification token.
+   * Authentication is handled automatically via the JWT HTTP interceptor.
+   */
+  verifyPass(): void {
+    if (this.isVerifying) {
+      return;
+    }
+
+    if (!this.reservation) {
+      this.verificationError = 'No reservation details available to verify.';
+      this.verificationSuccess = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (this.reservation.status === 'CANCELLED') {
+      this.verificationError = 'Cannot verify a cancelled reservation.';
+      this.verificationSuccess = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (!this.reservation.qrToken || !this.reservation.qrToken.trim()) {
+      this.verificationError = 'No server verification token assigned to this reservation.';
+      this.verificationSuccess = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.isVerifying = true;
+    this.verificationError = null;
+    this.cdr.markForCheck();
+
+    this.reservationQrService.verifyReservation({
+      reservationId: this.reservation.id,
+      token: this.reservation.qrToken
+    }).subscribe({
+      next: (response: QrVerificationResponseDto) => {
+        this.isVerifying = false;
+        if (response && response.valid) {
+          this.verificationSuccess = true;
+          this.verificationResult = response;
+          this.verificationError = null;
+        } else {
+          this.verificationSuccess = false;
+          this.verificationResult = null;
+          this.verificationError = response?.message || 'Verification could not be confirmed by the server.';
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        this.isVerifying = false;
+        this.verificationSuccess = false;
+        this.verificationResult = null;
+
+        if (err?.status === 400) {
+          this.verificationError = err.error?.message || err.message || 'Invalid verification token or reservation state.';
+        } else if (err?.status === 401) {
+          this.verificationError = 'Authentication required. Please log in again to verify your reservation.';
+        } else if (err?.status === 403) {
+          this.verificationError = err.error?.message || 'You are not authorized to verify this reservation.';
+        } else if (err?.status === 404) {
+          this.verificationError = err.error?.message || 'Reservation was not found on the server.';
+        } else {
+          this.verificationError = err.error?.message || 'Verification service is currently unavailable. Please try again.';
+        }
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   /**
