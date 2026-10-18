@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { StaffLayout } from './components/staff-layout/staff-layout';
+import { authGuard } from '../../core/guards/auth.guard';
+import { roleGuard } from '../../core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -10,6 +12,8 @@ export const routes: Routes = [
   {
     path: '',
     component: StaffLayout,
+    canActivate: [authGuard, roleGuard],
+    canActivateChild: [authGuard, roleGuard],
     children: [
       {
         path: '',

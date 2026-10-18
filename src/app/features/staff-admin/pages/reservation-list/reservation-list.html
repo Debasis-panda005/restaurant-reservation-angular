@@ -1,10 +1,199 @@
 <div class="reservations-container">
 
   <header class="reservations-header">
-    <span class="page-badge">Bookings</span>
-    <h1 class="reservations-title">Reservation Management</h1>
-    <p class="reservations-subtitle">View and manage all customer reservations.</p>
+    <div class="reservations-header-left">
+      <span class="page-badge">Bookings</span>
+      <h1 class="reservations-title">Reservation Management</h1>
+      <p class="reservations-subtitle">View and manage all customer reservations.</p>
+    </div>
+    <div class="reservations-header-actions">
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="fetchReservations()"
+        [disabled]="isLoading"
+        aria-label="Refresh reservation list"
+      >
+        <span class="refresh-icon" [class.spinning]="isLoading" aria-hidden="true">↻</span>
+        <span>Refresh</span>
+      </button>
+      <button
+        type="button"
+        class="btn-create-reservation"
+        (click)="toggleCreateForm()"
+      >
+        {{ isCreateFormVisible ? '✕ Cancel' : '+ Create Reservation' }}
+      </button>
+    </div>
   </header>
+
+  @if (isCreateFormVisible) {
+    <div class="create-reservation-card">
+      <div class="create-reservation-header">
+        <h2 class="create-reservation-title">Create Reservation</h2>
+        <p class="create-reservation-subtitle">Book a new reservation for a customer.</p>
+      </div>
+
+      @if (createFormErrorMessage) {
+        <div class="form-alert" role="alert">
+          <span>{{ createFormErrorMessage }}</span>
+          <button
+            type="button"
+            class="alert-dismiss-btn"
+            (click)="createFormErrorMessage = ''"
+            aria-label="Dismiss alert"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      <form
+        [formGroup]="createReservationForm"
+        (ngSubmit)="onCreateReservationSubmit()"
+        class="create-reservation-form"
+      >
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="createRestaurantId" class="form-label">Restaurant ID</label>
+            <input
+              id="createRestaurantId"
+              type="number"
+              formControlName="restaurantId"
+              class="form-input"
+              [class.input-error]="
+                createReservationForm.controls.restaurantId.invalid &&
+                (createReservationForm.controls.restaurantId.touched || createReservationForm.controls.restaurantId.dirty)
+              "
+              placeholder="e.g. 1"
+              min="1"
+            />
+            @if (
+              createReservationForm.controls.restaurantId.invalid &&
+              (createReservationForm.controls.restaurantId.touched || createReservationForm.controls.restaurantId.dirty)
+            ) {
+              @if (createReservationForm.controls.restaurantId.hasError('required')) {
+                <span class="error-text">Restaurant ID is required.</span>
+              } @else if (createReservationForm.controls.restaurantId.hasError('min')) {
+                <span class="error-text">Restaurant ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="createCustomerId" class="form-label">Customer ID</label>
+            <input
+              id="createCustomerId"
+              type="number"
+              formControlName="customerId"
+              class="form-input"
+              [class.input-error]="
+                createReservationForm.controls.customerId.invalid &&
+                (createReservationForm.controls.customerId.touched || createReservationForm.controls.customerId.dirty)
+              "
+              placeholder="e.g. 101"
+              min="1"
+            />
+            @if (
+              createReservationForm.controls.customerId.invalid &&
+              (createReservationForm.controls.customerId.touched || createReservationForm.controls.customerId.dirty)
+            ) {
+              @if (createReservationForm.controls.customerId.hasError('required')) {
+                <span class="error-text">Customer ID is required.</span>
+              } @else if (createReservationForm.controls.customerId.hasError('min')) {
+                <span class="error-text">Customer ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="createNumberOfGuests" class="form-label">Number of Guests</label>
+            <input
+              id="createNumberOfGuests"
+              type="number"
+              formControlName="numberOfGuests"
+              class="form-input"
+              [class.input-error]="
+                createReservationForm.controls.numberOfGuests.invalid &&
+                (createReservationForm.controls.numberOfGuests.touched || createReservationForm.controls.numberOfGuests.dirty)
+              "
+              placeholder="e.g. 4"
+              min="1"
+            />
+            @if (
+              createReservationForm.controls.numberOfGuests.invalid &&
+              (createReservationForm.controls.numberOfGuests.touched || createReservationForm.controls.numberOfGuests.dirty)
+            ) {
+              @if (createReservationForm.controls.numberOfGuests.hasError('required')) {
+                <span class="error-text">Number of guests is required.</span>
+              } @else if (createReservationForm.controls.numberOfGuests.hasError('min')) {
+                <span class="error-text">At least 1 guest is required.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="createReservationDateTime" class="form-label">Reservation Date & Time</label>
+            <input
+              id="createReservationDateTime"
+              type="datetime-local"
+              formControlName="reservationDateTime"
+              class="form-input"
+              [class.input-error]="
+                createReservationForm.controls.reservationDateTime.invalid &&
+                (createReservationForm.controls.reservationDateTime.touched || createReservationForm.controls.reservationDateTime.dirty)
+              "
+            />
+            @if (
+              createReservationForm.controls.reservationDateTime.invalid &&
+              (createReservationForm.controls.reservationDateTime.touched || createReservationForm.controls.reservationDateTime.dirty)
+            ) {
+              <span class="error-text">Reservation date and time are required.</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-submit-reservation"
+            [disabled]="isSubmitting"
+          >
+            {{ isSubmitting ? 'Creating Reservation...' : 'Create Reservation' }}
+          </button>
+          <button
+            type="button"
+            class="btn-cancel-reservation"
+            (click)="cancelCreateForm()"
+            [disabled]="isSubmitting"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="reservations-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Loading reservations...</span>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="reservations-alert" role="alert">
+      <span>{{ errorMessage }}</span>
+      <button
+        type="button"
+        class="alert-dismiss-btn"
+        (click)="errorMessage = ''"
+        aria-label="Dismiss alert"
+      >
+        ✕
+      </button>
+    </div>
+  }
 
   <div class="table-wrapper">
     <table class="reservations-table">
@@ -36,6 +225,7 @@
                 [class.status-confirmed]="res.status === 'Confirmed'"
                 [class.status-rejected]="res.status === 'Rejected'"
                 [class.status-completed]="res.status === 'Completed'"
+                [class.status-cancelled]="res.status === 'Cancelled'"
               >
                 {{ res.status }}
               </span>
@@ -44,11 +234,18 @@
               <a
                 [routerLink]="['/staff/reservations', res.id]"
                 class="btn-details"
+                [attr.aria-label]="'View details for reservation #' + res.id"
               >
                 View Details
               </a>
             </td>
           </tr>
+        } @empty {
+          @if (!isLoading && !errorMessage) {
+            <tr>
+              <td colspan="8" class="empty-message">No reservations found.</td>
+            </tr>
+          }
         }
       </tbody>
     </table>

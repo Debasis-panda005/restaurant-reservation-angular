@@ -1,115 +1,355 @@
 <div class="detail-container">
 
   <div class="top-nav">
-    <a routerLink="/staff/reservations" class="back-link">
+    <a routerLink="/staff/reservations" class="back-link" aria-label="Back to reservation list">
       ← Back to Reservations
     </a>
   </div>
 
-  @if (reservation) {
+  @if (isLoading) {
+    <div class="detail-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Loading reservation details...</span>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="detail-alert" role="alert">
+      <span>{{ errorMessage }}</span>
+      <button
+        type="button"
+        class="alert-dismiss-btn"
+        (click)="errorMessage = ''"
+        aria-label="Dismiss alert"
+      >
+        ✕
+      </button>
+    </div>
+  }
+
+  @if (!isLoading && reservation) {
     <header class="detail-header">
-    <div class="header-info">
-      <span class="page-badge">Bookings</span>
-      <h1 class="page-title">Reservation Details</h1>
-      <span class="reservation-id">ID: {{ reservation.id }}</span>
-    </div>
-    <span
-      class="status-badge"
-      [class.status-pending]="reservation.status === 'Pending'"
-      [class.status-confirmed]="reservation.status === 'Confirmed'"
-      [class.status-rejected]="reservation.status === 'Rejected'"
-      [class.status-completed]="reservation.status === 'Completed'"
-    >
-      {{ reservation.status }}
-    </span>
-  </header>
-
-  <div class="detail-card">
-
-    <div class="card-section">
-      <h2 class="section-title">Customer Information</h2>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Customer Name</span>
-          <span class="value">{{ reservation.customerName }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Email Address</span>
-          <span class="value">{{ reservation.customerEmail }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Phone Number</span>
-          <span class="value">{{ reservation.customerPhone }}</span>
+      <div class="header-info">
+        <span class="page-badge">Bookings</span>
+        <h1 class="page-title">Reservation Details</h1>
+        <span class="reservation-id">ID: {{ reservation.id }}</span>
+      </div>
+      <div class="header-controls">
+        <span
+          class="status-badge"
+          [class.status-pending]="reservation.status === 'Pending'"
+          [class.status-confirmed]="reservation.status === 'Confirmed'"
+          [class.status-rejected]="reservation.status === 'Rejected'"
+          [class.status-completed]="reservation.status === 'Completed'"
+          [class.status-cancelled]="reservation.status === 'Cancelled'"
+        >
+          {{ reservation.status }}
+        </span>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="btn-header-action btn-edit"
+            (click)="startEdit()"
+            [disabled]="isEditing || isDeleting"
+            [attr.aria-label]="'Edit reservation #' + reservation.id"
+          >
+            ✎ Edit
+          </button>
+          <button
+            type="button"
+            class="btn-header-action btn-delete"
+            (click)="promptDelete()"
+            [disabled]="isEditing || isDeleting"
+            [attr.aria-label]="'Delete reservation #' + reservation.id"
+          >
+            🗑 Delete
+          </button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="divider"></div>
-
-    <div class="card-section">
-      <h2 class="section-title">Reservation Details</h2>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Assigned Table</span>
-          <span class="value highlight-table">{{ reservation.tableNumber }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Reservation Date</span>
-          <span class="value">{{ reservation.date }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Reservation Time</span>
-          <span class="value">{{ reservation.time }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Number of Guests</span>
-          <span class="value">{{ reservation.guests }} guests</span>
-        </div>
-        @if (reservation.specialRequests) {
-          <div class="info-item full-width">
-            <span class="label">Special Requests</span>
-            <span class="value">{{ reservation.specialRequests }}</span>
-          </div>
-        }
-      </div>
-    </div>
-
-    @if (reservation.status === 'Pending' || reservation.status === 'Confirmed') {
-      <div class="divider"></div>
-
-      <div class="card-section actions-section">
-        <h2 class="section-title">Actions</h2>
-        <div class="actions-group">
-          @if (reservation.status === 'Pending') {
-            <button
-              type="button"
-              class="btn btn-confirm"
-              (click)="confirmReservation()"
-            >
-              ✓ Confirm Reservation
-            </button>
-            <button
-              type="button"
-              class="btn btn-reject"
-              (click)="rejectReservation()"
-            >
-              ✕ Reject Reservation
-            </button>
-          } @else if (reservation.status === 'Confirmed') {
-            <button
-              type="button"
-              class="btn btn-complete"
-              (click)="completeReservation()"
-            >
-              ✓ Complete Reservation
-            </button>
-          }
+    @if (isDeletePromptVisible) {
+      <div
+        class="delete-confirm-box"
+        role="alertdialog"
+        aria-labelledby="delete-dialog-title"
+        aria-modal="true"
+      >
+        <h3 id="delete-dialog-title" class="confirm-title">Delete Reservation</h3>
+        <p class="confirm-message">
+          Are you sure you want to delete reservation #{{ reservation.id }}? This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button
+            type="button"
+            class="btn-confirm-delete"
+            (click)="confirmDelete()"
+            [disabled]="isDeleting"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Confirm Delete' }}
+          </button>
+          <button
+            type="button"
+            class="btn-cancel-delete"
+            (click)="cancelDelete()"
+            [disabled]="isDeleting"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     }
 
-  </div>
-  } @else {
+    @if (isEditing) {
+      <div class="edit-reservation-card">
+        <div class="edit-reservation-header">
+          <h2 class="edit-reservation-title">Edit Reservation #{{ reservation.id }}</h2>
+          <p class="edit-reservation-subtitle">
+            Update booking details while preserving its current status ({{ reservation.status }}).
+          </p>
+        </div>
+
+        @if (editFormErrorMessage) {
+          <div class="form-alert" role="alert">
+            <span>{{ editFormErrorMessage }}</span>
+            <button
+              type="button"
+              class="alert-dismiss-btn"
+              (click)="editFormErrorMessage = ''"
+              aria-label="Dismiss alert"
+            >
+              ✕
+            </button>
+          </div>
+        }
+
+        <form
+          [formGroup]="editReservationForm"
+          (ngSubmit)="onEditReservationSubmit()"
+          class="edit-reservation-form"
+        >
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="editRestaurantId" class="form-label">Restaurant ID</label>
+              <input
+                id="editRestaurantId"
+                type="number"
+                formControlName="restaurantId"
+                class="form-input"
+                [class.input-error]="
+                  editReservationForm.controls.restaurantId.invalid &&
+                  (editReservationForm.controls.restaurantId.touched || editReservationForm.controls.restaurantId.dirty)
+                "
+                placeholder="e.g. 1"
+                min="1"
+              />
+              @if (
+                editReservationForm.controls.restaurantId.invalid &&
+                (editReservationForm.controls.restaurantId.touched || editReservationForm.controls.restaurantId.dirty)
+              ) {
+                @if (editReservationForm.controls.restaurantId.hasError('required')) {
+                  <span class="error-text">Restaurant ID is required.</span>
+                } @else if (editReservationForm.controls.restaurantId.hasError('min')) {
+                  <span class="error-text">Restaurant ID must be at least 1.</span>
+                }
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="editCustomerId" class="form-label">Customer ID</label>
+              <input
+                id="editCustomerId"
+                type="number"
+                formControlName="customerId"
+                class="form-input"
+                [class.input-error]="
+                  editReservationForm.controls.customerId.invalid &&
+                  (editReservationForm.controls.customerId.touched || editReservationForm.controls.customerId.dirty)
+                "
+                placeholder="e.g. 101"
+                min="1"
+              />
+              @if (
+                editReservationForm.controls.customerId.invalid &&
+                (editReservationForm.controls.customerId.touched || editReservationForm.controls.customerId.dirty)
+              ) {
+                @if (editReservationForm.controls.customerId.hasError('required')) {
+                  <span class="error-text">Customer ID is required.</span>
+                } @else if (editReservationForm.controls.customerId.hasError('min')) {
+                  <span class="error-text">Customer ID must be at least 1.</span>
+                }
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="editNumberOfGuests" class="form-label">Number of Guests</label>
+              <input
+                id="editNumberOfGuests"
+                type="number"
+                formControlName="numberOfGuests"
+                class="form-input"
+                [class.input-error]="
+                  editReservationForm.controls.numberOfGuests.invalid &&
+                  (editReservationForm.controls.numberOfGuests.touched || editReservationForm.controls.numberOfGuests.dirty)
+                "
+                placeholder="e.g. 4"
+                min="1"
+              />
+              @if (
+                editReservationForm.controls.numberOfGuests.invalid &&
+                (editReservationForm.controls.numberOfGuests.touched || editReservationForm.controls.numberOfGuests.dirty)
+              ) {
+                @if (editReservationForm.controls.numberOfGuests.hasError('required')) {
+                  <span class="error-text">Number of guests is required.</span>
+                } @else if (editReservationForm.controls.numberOfGuests.hasError('min')) {
+                  <span class="error-text">At least 1 guest is required.</span>
+                }
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="editReservationDateTime" class="form-label">Reservation Date & Time</label>
+              <input
+                id="editReservationDateTime"
+                type="datetime-local"
+                formControlName="reservationDateTime"
+                class="form-input"
+                [class.input-error]="
+                  editReservationForm.controls.reservationDateTime.invalid &&
+                  (editReservationForm.controls.reservationDateTime.touched || editReservationForm.controls.reservationDateTime.dirty)
+                "
+              />
+              @if (
+                editReservationForm.controls.reservationDateTime.invalid &&
+                (editReservationForm.controls.reservationDateTime.touched || editReservationForm.controls.reservationDateTime.dirty)
+              ) {
+                <span class="error-text">Reservation date and time are required.</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn-submit-reservation"
+              [disabled]="isEditSubmitting"
+            >
+              {{ isEditSubmitting ? 'Saving Changes...' : 'Save Changes' }}
+            </button>
+            <button
+              type="button"
+              class="btn-cancel-reservation"
+              (click)="cancelEdit()"
+              [disabled]="isEditSubmitting"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="detail-card">
+
+      <div class="card-section">
+        <h2 class="section-title">Customer Information</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Customer Name</span>
+            <span class="value">{{ reservation.customerName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Email Address</span>
+            <span class="value">{{ reservation.customerEmail }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Phone Number</span>
+            <span class="value">{{ reservation.customerPhone }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card-section">
+        <h2 class="section-title">Reservation Details</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Assigned Table</span>
+            <span class="value highlight-table">{{ reservation.tableNumber }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Reservation Date</span>
+            <span class="value">{{ reservation.date }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Reservation Time</span>
+            <span class="value">{{ reservation.time }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Number of Guests</span>
+            <span class="value">{{ reservation.guests }} guests</span>
+          </div>
+          @if (reservation.specialRequests) {
+            <div class="info-item full-width">
+              <span class="label">Special Requests</span>
+              <span class="value">{{ reservation.specialRequests }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (reservation.status === 'Pending' || reservation.status === 'Confirmed') {
+        <div class="divider"></div>
+
+        <div class="card-section actions-section">
+          <h2 class="section-title">Actions</h2>
+          <div class="actions-group">
+            @if (reservation.status === 'Pending') {
+              <button
+                type="button"
+                class="btn btn-confirm"
+                [disabled]="isUpdating"
+                (click)="confirmReservation()"
+                [attr.aria-label]="'Confirm reservation #' + reservation.id"
+              >
+                ✓ Confirm Reservation
+              </button>
+              <button
+                type="button"
+                class="btn btn-reject"
+                [disabled]="isUpdating"
+                (click)="rejectReservation()"
+                [attr.aria-label]="'Reject reservation #' + reservation.id"
+              >
+                ✕ Reject Reservation
+              </button>
+            } @else if (reservation.status === 'Confirmed') {
+              <button
+                type="button"
+                class="btn btn-complete"
+                [disabled]="isUpdating"
+                (click)="completeReservation()"
+                [attr.aria-label]="'Complete reservation #' + reservation.id"
+              >
+                ✓ Complete Reservation
+              </button>
+              <button
+                type="button"
+                class="btn btn-reject"
+                [disabled]="isUpdating"
+                (click)="cancelReservation()"
+                [attr.aria-label]="'Cancel reservation #' + reservation.id"
+              >
+                ✕ Cancel Reservation
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  } @else if (!isLoading && !reservation) {
     <div class="detail-card">
       <h2 class="section-title">Reservation Not Found</h2>
       <p style="color: #64748b; font-size: 0.95rem; margin: 0 0 1.25rem 0;">

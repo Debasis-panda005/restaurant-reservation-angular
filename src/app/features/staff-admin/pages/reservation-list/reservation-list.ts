@@ -1,11 +1,40 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { finalize } from 'rxjs';
 
 export type ReservationStatus =
   | 'Pending'
   | 'Confirmed'
   | 'Rejected'
-  | 'Completed';
+  | 'Completed'
+  | 'Cancelled'
+  | 'Checked-In'
+  | 'No-Show';
+
+export interface BackendReservation {
+  id: number | string;
+  customerId?: number | string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  restaurantId?: number;
+  tableId?: number | string;
+  tableNumber?: string;
+  date?: string;
+  time?: string;
+  guests?: number;
+  numberOfGuests?: number;
+  reservationDateTime?: string;
+  status?: string;
+  specialRequests?: string;
+}
 
 export interface ReservationItem {
   id: string;
@@ -20,75 +49,244 @@ export interface ReservationItem {
   specialRequests?: string;
 }
 
-export const SHARED_MOCK_RESERVATIONS: ReservationItem[] = [
-  {
-    id: 'RES-1001',
-    customerName: 'Sarah Jenkins',
-    customerEmail: 'sarah.jenkins@example.com',
-    customerPhone: '+1 (555) 123-4567',
-    tableNumber: 'T-04',
-    date: '2026-10-01',
-    time: '18:30',
-    guests: 4,
-    status: 'Confirmed',
-    specialRequests: 'Booth seating requested.',
-  },
-  {
-    id: 'RES-1002',
-    customerName: 'Michael Chang',
-    customerEmail: 'michael.chang@example.com',
-    customerPhone: '+1 (555) 234-5678',
-    tableNumber: 'T-01',
-    date: '2026-10-01',
-    time: '19:00',
-    guests: 2,
-    status: 'Pending',
-    specialRequests: 'Window seat preferred, celebrating anniversary.',
-  },
-  {
-    id: 'RES-1003',
-    customerName: 'Emma Watson',
-    customerEmail: 'emma.watson@example.com',
-    customerPhone: '+1 (555) 345-6789',
-    tableNumber: 'T-07',
-    date: '2026-10-01',
-    time: '19:30',
-    guests: 6,
-    status: 'Confirmed',
-    specialRequests: 'Birthday celebration; bringing own cake.',
-  },
-  {
-    id: 'RES-1004',
-    customerName: 'David Miller',
-    customerEmail: 'david.miller@example.com',
-    customerPhone: '+1 (555) 456-7890',
-    tableNumber: 'T-02',
-    date: '2026-10-01',
-    time: '20:00',
-    guests: 2,
-    status: 'Rejected',
-    specialRequests: 'Quiet corner preferred.',
-  },
-  {
-    id: 'RES-1005',
-    customerName: 'Olivia Taylor',
-    customerEmail: 'olivia.taylor@example.com',
-    customerPhone: '+1 (555) 567-8901',
-    tableNumber: 'T-05',
-    date: '2026-10-01',
-    time: '17:30',
-    guests: 5,
-    status: 'Completed',
-    specialRequests: 'High chair needed for child.',
-  },
-];
-
 @Component({
   selector: 'app-reservation-list',
-  imports: [RouterLink],
+  imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './reservation-list.html',
   styleUrl: './reservation-list.css',
 })
-export class ReservationList {
-  readonly reservations: ReservationItem[] = SHARED_MOCK_RESERVATIONS;
+export class ReservationList implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  reservations: ReservationItem[] = [];
+  isLoading = true;
+  errorMessage = '';
+
+  isCreateFormVisible = false;
+  isSubmitting = false;
+  createFormErrorMessage = '';
+
+  createReservationForm = new FormGroup({
+    restaurantId: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(1)],
+    }),
+    customerId: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(1)],
+    }),
+    numberOfGuests: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(1)],
+    }),
+    reservationDateTime: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+  });
+
+  ngOnInit(): void {
+    const queryRestaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (queryRestaurantId && !isNaN(Number(queryRestaurantId))) {
+      this.createReservationForm.patchValue({ restaurantId: Number(queryRestaurantId) });
+    }
+    this.fetchReservations();
+  }
+
+  toggleCreateForm(): void {
+    this.isCreateFormVisible = !this.isCreateFormVisible;
+    this.createFormErrorMessage = '';
+    this.cdr.markForCheck();
+  }
+
+  cancelCreateForm(): void {
+    this.isCreateFormVisible = false;
+    this.createFormErrorMessage = '';
+    this.cdr.markForCheck();
+  }
+
+  onCreateReservationSubmit(): void {
+    if (this.createReservationForm.invalid || this.isSubmitting) {
+      this.createReservationForm.markAllAsTouched();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.createFormErrorMessage = '';
+    this.cdr.markForCheck();
+
+    const raw = this.createReservationForm.getRawValue();
+    let dt = raw.reservationDateTime?.trim() || '';
+    if (dt.length === 16) {
+      dt = `${dt}:00`;
+    }
+
+    const payload = {
+      restaurantId: Number(raw.restaurantId),
+      customerId: Number(raw.customerId),
+      numberOfGuests: Number(raw.numberOfGuests),
+      reservationDateTime: dt,
+    };
+
+    this.http
+      .post<BackendReservation>('/api/staff/reservations', payload)
+      .pipe(
+        finalize(() => {
+          this.isSubmitting = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          const currentRestaurantId = this.createReservationForm.value.restaurantId;
+          this.createReservationForm.reset({
+            restaurantId: currentRestaurantId ?? null,
+            customerId: null,
+            numberOfGuests: null,
+            reservationDateTime: '',
+          });
+          this.isCreateFormVisible = false;
+          this.createFormErrorMessage = '';
+          this.cdr.markForCheck();
+          this.fetchReservations();
+        },
+        error: (error: HttpErrorResponse | any) => {
+          console.error('Failed to create reservation:', error);
+          if (error?.status === 404) {
+            this.createFormErrorMessage =
+              'Restaurant not found. Please verify the Restaurant ID.';
+          } else if (error?.status === 401) {
+            this.createFormErrorMessage =
+              'Authentication required. Please log in again.';
+          } else if (error?.status === 403) {
+            this.createFormErrorMessage =
+              'Access denied. Staff or Admin privileges are required.';
+          } else if (error?.status === 0) {
+            this.createFormErrorMessage =
+              'Unable to connect to the backend server. Check that the backend is running.';
+          } else if (typeof error?.error?.message === 'string') {
+            this.createFormErrorMessage = error.error.message;
+          } else {
+            this.createFormErrorMessage =
+              'Failed to create reservation. Please verify the entered details.';
+          }
+          this.isSubmitting = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  fetchReservations(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+
+    const restaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    const url = restaurantId
+      ? `/api/staff/reservations/restaurant/${restaurantId}`
+      : '/api/staff/reservations';
+
+    this.http
+      .get<BackendReservation[]>(url)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (data) => {
+          const list = Array.isArray(data) ? data : [];
+          this.reservations = list.map((res) =>
+            this.mapBackendReservation(res)
+          );
+          this.isLoading = false;
+          this.errorMessage = '';
+          this.cdr.markForCheck();
+        },
+        error: (error: HttpErrorResponse | any) => {
+          console.error('Failed to load reservations:', error);
+          if (error?.status === 401) {
+            this.errorMessage = 'Authentication required. Please log in again.';
+          } else if (error?.status === 403) {
+            this.errorMessage =
+              'Access denied. Staff or Admin privileges are required.';
+          } else if (error?.status === 404) {
+            this.errorMessage = 'Reservations not found.';
+          } else if (error?.status === 0) {
+            this.errorMessage =
+              'Unable to connect to the backend server. Check that the backend is running.';
+          } else {
+            this.errorMessage =
+              'Unable to load reservations. Check that the backend is running.';
+          }
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private mapBackendReservation(data: BackendReservation): ReservationItem {
+    let date = '';
+    let time = '';
+
+    if (data.reservationDateTime) {
+      const parts = data.reservationDateTime.split('T');
+      if (parts[0]) {
+        date = parts[0];
+      }
+      if (parts[1]) {
+        time = parts[1].substring(0, 5);
+      }
+    }
+
+    if (!date && data.date) {
+      date = data.date;
+    }
+    if (!time && data.time) {
+      time = data.time;
+    }
+
+    return {
+      id: String(data.id),
+      customerName:
+        data.customerName ||
+        (data.customerId ? `Customer #${data.customerId}` : 'Unknown Customer'),
+      customerEmail: data.customerEmail || '—',
+      customerPhone: data.customerPhone || '—',
+      tableNumber:
+        data.tableNumber ||
+        (data.tableId ? `T-${data.tableId}` : '—'),
+      date,
+      time,
+      guests: data.numberOfGuests ?? data.guests ?? 1,
+      status: this.normalizeStatus(data.status),
+      specialRequests: data.specialRequests || '',
+    };
+  }
+
+  private normalizeStatus(status?: string): ReservationStatus {
+    if (!status) return 'Pending';
+    const s = status.toUpperCase();
+    switch (s) {
+      case 'CONFIRMED':
+        return 'Confirmed';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'COMPLETED':
+        return 'Completed';
+      case 'CANCELLED':
+      case 'CANCELED':
+        return 'Cancelled';
+      case 'CHECKED_IN':
+      case 'CHECKED-IN':
+        return 'Checked-In';
+      case 'NO_SHOW':
+      case 'NO-SHOW':
+        return 'No-Show';
+      case 'PENDING':
+      default:
+        return 'Pending';
+    }
+  }
 }

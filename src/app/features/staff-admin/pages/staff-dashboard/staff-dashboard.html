@@ -1,40 +1,75 @@
 <div class="dashboard-container">
 
   <header class="dashboard-header">
-    <span class="page-badge">Overview</span>
-    <h1 class="dashboard-title">Staff Dashboard</h1>
-    <p class="dashboard-subtitle">Live snapshot of today's reservations, queue, and tables.</p>
+    <div class="header-titles">
+      <span class="page-badge">Overview</span>
+      <h1 class="dashboard-title">Staff Dashboard</h1>
+      <p class="dashboard-subtitle">Live snapshot of today's reservations, queue, and tables.</p>
+    </div>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="fetchDashboardStats()"
+        [disabled]="isLoading"
+        aria-label="Refresh dashboard statistics"
+      >
+        <span class="refresh-icon" [class.spinning]="isLoading" aria-hidden="true">↻</span>
+        <span>Refresh</span>
+      </button>
+    </div>
   </header>
+
+  @if (isLoading) {
+    <div class="dashboard-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Loading dashboard statistics...</span>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="dashboard-alert" role="alert">
+      <span>{{ errorMessage }}</span>
+      <button
+        type="button"
+        class="alert-dismiss-btn"
+        (click)="errorMessage = ''"
+        aria-label="Dismiss alert"
+      >
+        ✕
+      </button>
+    </div>
+  }
 
   <section class="cards-grid">
 
-    <div class="card">
+    <a routerLink="/staff/reservations" class="card card-link" aria-label="View all reservations">
       <div class="card-icon icon-blue">📋</div>
       <div class="card-label">Total Reservations</div>
       <div class="card-value">{{ totalReservations }}</div>
-      <div class="card-hint">All-time bookings</div>
-    </div>
+      <div class="card-hint">All bookings →</div>
+    </a>
 
-    <div class="card">
+    <a routerLink="/staff/reservations" class="card card-link" aria-label="View pending reservations">
       <div class="card-icon icon-amber">⏳</div>
       <div class="card-label">Pending Reservations</div>
       <div class="card-value">{{ pendingReservations }}</div>
-      <div class="card-hint">Awaiting confirmation</div>
-    </div>
+      <div class="card-hint">Awaiting confirmation →</div>
+    </a>
 
-    <div class="card">
+    <a routerLink="/staff/queue" class="card card-link" aria-label="View current queue">
       <div class="card-icon icon-purple">👥</div>
       <div class="card-label">Current Queue</div>
       <div class="card-value">{{ currentQueue }}</div>
-      <div class="card-hint">Customers waiting</div>
-    </div>
+      <div class="card-hint">Customers waiting →</div>
+    </a>
 
-    <div class="card">
+    <a routerLink="/staff/tables" class="card card-link" aria-label="View table management">
       <div class="card-icon icon-green">🪑</div>
       <div class="card-label">Available Tables</div>
       <div class="card-value">{{ availableTables }}</div>
-      <div class="card-hint">Ready to be seated</div>
-    </div>
+      <div class="card-hint">Ready to seat →</div>
+    </a>
 
   </section>
 

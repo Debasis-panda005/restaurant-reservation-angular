@@ -1,14 +1,292 @@
 <div class="tables-container">
 
   <header class="tables-header">
-    <span class="page-badge">Floor Plan</span>
-    <h1 class="tables-title">Table Management</h1>
-    <p class="tables-subtitle">Current status of all restaurant tables.</p>
+    <div class="tables-header-left">
+      <span class="page-badge">Floor Plan</span>
+      <h1 class="tables-title">Table Management</h1>
+      <p class="tables-subtitle">Current status of all restaurant tables.</p>
+    </div>
+    <div class="tables-header-actions">
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="fetchTables()"
+        [disabled]="isLoading"
+        aria-label="Refresh table list"
+      >
+        <span class="refresh-icon" [class.spinning]="isLoading" aria-hidden="true">↻</span>
+        <span>Refresh</span>
+      </button>
+      <button
+        type="button"
+        class="btn-add-table"
+        (click)="toggleAddForm()"
+      >
+        {{ isAddFormVisible ? '✕ Cancel' : '+ Add Table' }}
+      </button>
+    </div>
   </header>
+
+  @if (isAddFormVisible) {
+    <div class="add-table-card">
+      <div class="add-table-header">
+        <h2 class="add-table-title">Add New Table</h2>
+        <p class="add-table-subtitle">Configure a new dining table for your restaurant floor.</p>
+      </div>
+
+      @if (formErrorMessage) {
+        <div class="form-alert" role="alert">
+          <span>{{ formErrorMessage }}</span>
+          <button
+            type="button"
+            class="alert-dismiss-btn"
+            (click)="formErrorMessage = ''"
+            aria-label="Dismiss alert"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      <form [formGroup]="addTableForm" (ngSubmit)="onAddTableSubmit()" class="add-table-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="restaurantId" class="form-label">Restaurant ID</label>
+            <input
+              id="restaurantId"
+              type="number"
+              formControlName="restaurantId"
+              class="form-input"
+              [class.input-error]="
+                addTableForm.controls.restaurantId.invalid &&
+                (addTableForm.controls.restaurantId.touched || addTableForm.controls.restaurantId.dirty)
+              "
+              placeholder="e.g. 2"
+              min="1"
+            />
+            @if (
+              addTableForm.controls.restaurantId.invalid &&
+              (addTableForm.controls.restaurantId.touched || addTableForm.controls.restaurantId.dirty)
+            ) {
+              @if (addTableForm.controls.restaurantId.hasError('required')) {
+                <span class="error-text">Restaurant ID is required.</span>
+              } @else if (addTableForm.controls.restaurantId.hasError('min')) {
+                <span class="error-text">Restaurant ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="tableNumber" class="form-label">Table Number</label>
+            <input
+              id="tableNumber"
+              type="text"
+              formControlName="tableNumber"
+              class="form-input"
+              [class.input-error]="
+                addTableForm.controls.tableNumber.invalid &&
+                (addTableForm.controls.tableNumber.touched || addTableForm.controls.tableNumber.dirty)
+              "
+              placeholder="e.g. T-01 or Table 5"
+            />
+            @if (
+              addTableForm.controls.tableNumber.invalid &&
+              (addTableForm.controls.tableNumber.touched || addTableForm.controls.tableNumber.dirty)
+            ) {
+              <span class="error-text">Table number is required.</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="capacity" class="form-label">Capacity (Guests)</label>
+            <input
+              id="capacity"
+              type="number"
+              formControlName="capacity"
+              class="form-input"
+              [class.input-error]="
+                addTableForm.controls.capacity.invalid &&
+                (addTableForm.controls.capacity.touched || addTableForm.controls.capacity.dirty)
+              "
+              placeholder="e.g. 4"
+              min="1"
+            />
+            @if (
+              addTableForm.controls.capacity.invalid &&
+              (addTableForm.controls.capacity.touched || addTableForm.controls.capacity.dirty)
+            ) {
+              @if (addTableForm.controls.capacity.hasError('required')) {
+                <span class="error-text">Capacity is required.</span>
+              } @else if (addTableForm.controls.capacity.hasError('min')) {
+                <span class="error-text">Capacity must be at least 1.</span>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-submit-table"
+            [disabled]="addTableForm.invalid || isSubmitting"
+          >
+            {{ isSubmitting ? 'Adding Table...' : 'Save Table' }}
+          </button>
+          <button
+            type="button"
+            class="btn-cancel-table"
+            [disabled]="isSubmitting"
+            (click)="toggleAddForm()"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (editingTable) {
+    <div class="edit-table-card">
+      <div class="edit-table-header">
+        <h2 class="edit-table-title">Edit Table: {{ editingTable.tableNumber }}</h2>
+        <p class="edit-table-subtitle">Modify table details and capacity while preserving its {{ editingTable.status }} status.</p>
+      </div>
+
+      @if (editFormErrorMessage) {
+        <div class="form-alert" role="alert">
+          <span>{{ editFormErrorMessage }}</span>
+          <button
+            type="button"
+            class="alert-dismiss-btn"
+            (click)="editFormErrorMessage = ''"
+            aria-label="Dismiss alert"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      <form [formGroup]="editTableForm" (ngSubmit)="onEditTableSubmit()" class="edit-table-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editRestaurantId" class="form-label">Restaurant ID</label>
+            <input
+              id="editRestaurantId"
+              type="number"
+              formControlName="restaurantId"
+              class="form-input"
+              [class.input-error]="
+                editTableForm.controls.restaurantId.invalid &&
+                (editTableForm.controls.restaurantId.touched || editTableForm.controls.restaurantId.dirty)
+              "
+              placeholder="e.g. 2"
+              min="1"
+            />
+            @if (
+              editTableForm.controls.restaurantId.invalid &&
+              (editTableForm.controls.restaurantId.touched || editTableForm.controls.restaurantId.dirty)
+            ) {
+              @if (editTableForm.controls.restaurantId.hasError('required')) {
+                <span class="error-text">Restaurant ID is required.</span>
+              } @else if (editTableForm.controls.restaurantId.hasError('min')) {
+                <span class="error-text">Restaurant ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="editTableNumber" class="form-label">Table Number</label>
+            <input
+              id="editTableNumber"
+              type="text"
+              formControlName="tableNumber"
+              class="form-input"
+              [class.input-error]="
+                editTableForm.controls.tableNumber.invalid &&
+                (editTableForm.controls.tableNumber.touched || editTableForm.controls.tableNumber.dirty)
+              "
+              placeholder="e.g. T-01"
+            />
+            @if (
+              editTableForm.controls.tableNumber.invalid &&
+              (editTableForm.controls.tableNumber.touched || editTableForm.controls.tableNumber.dirty)
+            ) {
+              <span class="error-text">Table number is required.</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="editCapacity" class="form-label">Capacity (Guests)</label>
+            <input
+              id="editCapacity"
+              type="number"
+              formControlName="capacity"
+              class="form-input"
+              [class.input-error]="
+                editTableForm.controls.capacity.invalid &&
+                (editTableForm.controls.capacity.touched || editTableForm.controls.capacity.dirty)
+              "
+              placeholder="e.g. 4"
+              min="1"
+            />
+            @if (
+              editTableForm.controls.capacity.invalid &&
+              (editTableForm.controls.capacity.touched || editTableForm.controls.capacity.dirty)
+            ) {
+              @if (editTableForm.controls.capacity.hasError('required')) {
+                <span class="error-text">Capacity is required.</span>
+              } @else if (editTableForm.controls.capacity.hasError('min')) {
+                <span class="error-text">Capacity must be at least 1.</span>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-submit-table"
+            [disabled]="editTableForm.invalid || isEditSubmitting"
+          >
+            {{ isEditSubmitting ? 'Saving Changes...' : 'Save Changes' }}
+          </button>
+          <button
+            type="button"
+            class="btn-cancel-table"
+            [disabled]="isEditSubmitting"
+            (click)="cancelEditTable()"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="tables-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Loading tables...</span>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="tables-alert" role="alert">
+      <span>{{ errorMessage }}</span>
+      <button
+        type="button"
+        class="alert-dismiss-btn"
+        (click)="errorMessage = ''"
+        aria-label="Dismiss alert"
+      >
+        ✕
+      </button>
+    </div>
+  }
 
   <section class="tables-grid">
     @for (table of tables; track table.id) {
-      <div class="table-card">
+      <div class="table-card" [class.card-is-editing]="editingTable?.id === table.id">
         <div class="card-header">
           <span class="table-number">{{ table.tableNumber }}</span>
           <span
@@ -25,12 +303,62 @@
             <span class="capacity-label">Capacity</span>
             <span class="capacity-value">{{ table.capacity }} guests</span>
           </div>
+
+          <div class="card-mgmt-actions">
+            <button
+              type="button"
+              class="btn-mgmt btn-edit-table"
+              [disabled]="updatingTableId === table.id || deletingTableId === table.id"
+              (click)="startEditTable(table)"
+              title="Edit table details"
+              [attr.aria-label]="'Edit table ' + table.tableNumber"
+            >
+              ✎ Edit
+            </button>
+            <button
+              type="button"
+              class="btn-mgmt btn-delete-table"
+              [disabled]="updatingTableId === table.id || deletingTableId === table.id"
+              (click)="promptDeleteTable(table)"
+              title="Delete table"
+              [attr.aria-label]="'Delete table ' + table.tableNumber"
+            >
+              🗑 Delete
+            </button>
+          </div>
+
+          @if (tablePendingDelete?.id === table.id) {
+            <div class="delete-confirm-box" role="alertdialog">
+              <span class="confirm-message">Delete table {{ table.tableNumber }}?</span>
+              <div class="confirm-actions">
+                <button
+                  type="button"
+                  class="btn-confirm-delete"
+                  [disabled]="deletingTableId === table.id"
+                  (click)="confirmDeleteTable(table)"
+                >
+                  {{ deletingTableId === table.id ? 'Deleting...' : 'Confirm' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-cancel-delete"
+                  [disabled]="deletingTableId === table.id"
+                  (click)="cancelDeleteTable()"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+
           <div class="card-actions">
             @if (table.status === 'Available') {
               <button
                 type="button"
                 class="btn-action btn-mark-occupied"
+                [disabled]="updatingTableId === table.id || deletingTableId === table.id"
                 (click)="toggleStatus(table)"
+                [attr.aria-label]="'Mark table ' + table.tableNumber + ' occupied'"
               >
                 Mark Occupied
               </button>
@@ -38,7 +366,9 @@
               <button
                 type="button"
                 class="btn-action btn-mark-available"
+                [disabled]="updatingTableId === table.id || deletingTableId === table.id"
                 (click)="toggleStatus(table)"
+                [attr.aria-label]="'Mark table ' + table.tableNumber + ' available'"
               >
                 Mark Available
               </button>
@@ -55,6 +385,14 @@
           </div>
         </div>
       </div>
+    } @empty {
+      @if (!isLoading && !errorMessage) {
+        <div class="tables-empty-state">
+          <span class="empty-icon">🪑</span>
+          <h3>No Tables Found</h3>
+          <p>No restaurant tables have been configured yet.</p>
+        </div>
+      }
     }
   </section>
 

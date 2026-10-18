@@ -53,24 +53,28 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="form-group">
-        <label for="username" class="form-label">Email / Username</label>
+        <label for="email" class="form-label">Email Address</label>
         <input
-          id="username"
-          type="text"
-          formControlName="username"
+          id="email"
+          type="email"
+          formControlName="email"
           class="form-input"
           [class.input-error]="
-            loginForm.controls.username.invalid &&
-            (loginForm.controls.username.touched || loginForm.controls.username.dirty)
+            loginForm.controls.email.invalid &&
+            (loginForm.controls.email.touched || loginForm.controls.email.dirty)
           "
-          placeholder="Enter username or email"
-          autocomplete="username"
+          placeholder="Enter your staff email"
+          autocomplete="email"
         />
         @if (
-          loginForm.controls.username.invalid &&
-          (loginForm.controls.username.touched || loginForm.controls.username.dirty)
+          loginForm.controls.email.invalid &&
+          (loginForm.controls.email.touched || loginForm.controls.email.dirty)
         ) {
-          <span class="error-text">Username or email is required.</span>
+          @if (loginForm.controls.email.hasError('required')) {
+            <span class="error-text">Email address is required.</span>
+          } @else if (loginForm.controls.email.hasError('email')) {
+            <span class="error-text">Please enter a valid email address.</span>
+          }
         }
       </div>
 
@@ -99,9 +103,10 @@
       <button
         type="submit"
         class="btn-submit"
-        [disabled]="loginForm.invalid"
+        [disabled]="loginForm.invalid || isLoading"
+        [attr.aria-busy]="isLoading"
       >
-        Login
+        {{ isLoading ? 'Signing In...' : 'Login' }}
       </button>
 
       <div class="form-footer">

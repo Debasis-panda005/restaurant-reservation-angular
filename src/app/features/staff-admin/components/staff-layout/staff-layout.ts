@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-staff-layout',
@@ -7,4 +8,12 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   templateUrl: './staff-layout.html',
   styleUrl: './staff-layout.css',
 })
-export class StaffLayout {}
+export class StaffLayout {
+  readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  onSignOut(): void {
+    this.authService.logout();
+    this.router?.navigate(['/staff/login']);
+  }
+}

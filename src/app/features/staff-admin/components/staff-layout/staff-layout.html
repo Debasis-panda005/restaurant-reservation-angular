@@ -4,10 +4,27 @@
       <span class="brand-title">Restaurant Management</span>
       <span class="portal-badge">Staff & Admin</span>
     </div>
+
+    <div class="header-user-section">
+      @if (authService.currentUser(); as user) {
+        <div class="user-meta">
+          <span class="user-name">{{ user.name || user.email || 'Staff Member' }}</span>
+          <span class="role-pill">{{ user.role || 'STAFF' }}</span>
+        </div>
+      }
+      <button
+        type="button"
+        class="btn-signout"
+        (click)="onSignOut()"
+        aria-label="Sign out of staff portal"
+      >
+        Sign Out
+      </button>
+    </div>
   </header>
 
   <div class="staff-body">
-    <aside class="staff-sidebar">
+    <aside class="staff-sidebar" aria-label="Staff navigation">
       <nav class="staff-nav">
         <a
           routerLink="/staff/dashboard"

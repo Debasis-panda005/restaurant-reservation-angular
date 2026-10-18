@@ -1,12 +1,183 @@
+
 <div class="queue-container">
 
   <header class="queue-header">
-    <span class="page-badge">Waitlist</span>
-    <h1 class="queue-title">Queue Management</h1>
-    <p class="queue-description">
-      Manage the current customer queue and table assignment.
-    </p>
+    <div class="queue-header-left">
+      <span class="page-badge">Waitlist</span>
+      <h1 class="queue-title">Queue Management</h1>
+      <p class="queue-description">
+        Manage the current customer queue and table assignment.
+      </p>
+    </div>
+
+    <div class="queue-header-actions">
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="loadData()"
+        [disabled]="isLoading"
+        aria-label="Refresh queue list"
+      >
+        <span class="refresh-icon" [class.spinning]="isLoading" aria-hidden="true">↻</span>
+        <span>Refresh</span>
+      </button>
+      <button
+        type="button"
+        class="btn-add-queue"
+        (click)="toggleAddForm()"
+      >
+        {{ isAddFormVisible ? '✕ Cancel' : '+ Add to Queue' }}
+      </button>
+    </div>
   </header>
+
+  @if (isAddFormVisible) {
+    <div class="add-queue-card">
+      <div class="add-queue-header">
+        <h2 class="add-queue-title">Add to Queue</h2>
+        <p class="add-queue-subtitle">Add a walk-in guest to the waitlist.</p>
+      </div>
+
+      @if (addFormErrorMessage) {
+        <div class="form-alert" role="alert">
+          <span>{{ addFormErrorMessage }}</span>
+          <button
+            type="button"
+            class="alert-dismiss-btn"
+            (click)="addFormErrorMessage = ''"
+            aria-label="Dismiss alert"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      <form
+        [formGroup]="addQueueForm"
+        (ngSubmit)="onAddQueueSubmit()"
+        class="add-queue-form"
+      >
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="queueRestaurantId" class="form-label">
+              Restaurant ID
+            </label>
+            <input
+              id="queueRestaurantId"
+              type="number"
+              formControlName="restaurantId"
+              class="form-input"
+              [class.input-error]="
+                addQueueForm.controls.restaurantId.invalid &&
+                (addQueueForm.controls.restaurantId.touched ||
+                  addQueueForm.controls.restaurantId.dirty)
+              "
+              placeholder="e.g. 1"
+              min="1"
+            />
+
+            @if (
+              addQueueForm.controls.restaurantId.invalid &&
+              (addQueueForm.controls.restaurantId.touched ||
+                addQueueForm.controls.restaurantId.dirty)
+            ) {
+              @if (addQueueForm.controls.restaurantId.hasError('required')) {
+                <span class="error-text">Restaurant ID is required.</span>
+              } @else if (addQueueForm.controls.restaurantId.hasError('min')) {
+                <span class="error-text">Restaurant ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="queueCustomerId" class="form-label">Customer ID</label>
+            <input
+              id="queueCustomerId"
+              type="number"
+              formControlName="customerId"
+              class="form-input"
+              [class.input-error]="
+                addQueueForm.controls.customerId.invalid &&
+                (addQueueForm.controls.customerId.touched ||
+                  addQueueForm.controls.customerId.dirty)
+              "
+              placeholder="e.g. 101"
+              min="1"
+            />
+
+            @if (
+              addQueueForm.controls.customerId.invalid &&
+              (addQueueForm.controls.customerId.touched ||
+                addQueueForm.controls.customerId.dirty)
+            ) {
+              @if (addQueueForm.controls.customerId.hasError('required')) {
+                <span class="error-text">Customer ID is required.</span>
+              } @else if (addQueueForm.controls.customerId.hasError('min')) {
+                <span class="error-text">Customer ID must be at least 1.</span>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="queueNumberOfPeople" class="form-label">
+              Number of People
+            </label>
+            <input
+              id="queueNumberOfPeople"
+              type="number"
+              formControlName="numberOfPeople"
+              class="form-input"
+              [class.input-error]="
+                addQueueForm.controls.numberOfPeople.invalid &&
+                (addQueueForm.controls.numberOfPeople.touched ||
+                  addQueueForm.controls.numberOfPeople.dirty)
+              "
+              placeholder="e.g. 2"
+              min="1"
+            />
+
+            @if (
+              addQueueForm.controls.numberOfPeople.invalid &&
+              (addQueueForm.controls.numberOfPeople.touched ||
+                addQueueForm.controls.numberOfPeople.dirty)
+            ) {
+              @if (addQueueForm.controls.numberOfPeople.hasError('required')) {
+                <span class="error-text">Number of people is required.</span>
+              } @else if (addQueueForm.controls.numberOfPeople.hasError('min')) {
+                <span class="error-text">At least 1 person is required.</span>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-submit-queue"
+            [disabled]="isSubmitting"
+          >
+            {{ isSubmitting ? 'Adding to Queue...' : 'Add to Queue' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn-cancel-queue"
+            (click)="cancelAddForm()"
+            [disabled]="isSubmitting"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="queue-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Loading customer queue...</span>
+    </div>
+  }
 
   @if (alertMessage) {
     <div class="queue-alert" role="alert">
@@ -36,6 +207,7 @@
           <th>Actions</th>
         </tr>
       </thead>
+
       <tbody>
         @for (item of queueList; track item.queueNo) {
           <tr>
@@ -44,6 +216,7 @@
             <td>{{ item.guests }}</td>
             <td>{{ item.joinedTime }}</td>
             <td>{{ item.position > 0 ? '#' + item.position : '—' }}</td>
+
             <td>
               <span
                 class="status-badge"
@@ -56,72 +229,131 @@
                 {{ item.status }}
               </span>
             </td>
+
             <td>
-              <span class="table-badge">{{ item.assignedTable || '—' }}</span>
+              <span class="table-badge">
+                {{ item.assignedTable || '—' }}
+              </span>
             </td>
+
             <td>
-              <div class="actions-group">
-                @if (item.status === 'Waiting') {
-                  <button
-                    type="button"
-                    class="btn btn-call"
-                    (click)="callCustomer(item)"
-                  >
-                    Call
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-cancel"
-                    (click)="cancelQueue(item)"
-                  >
-                    Cancel
-                  </button>
-                } @else if (item.status === 'Called') {
-                  <button
-                    type="button"
-                    class="btn btn-assign"
-                    (click)="assignTable(item)"
-                  >
-                    Assign Table
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-cancel"
-                    (click)="cancelQueue(item)"
-                  >
-                    Cancel
-                  </button>
-                } @else if (item.status === 'Seated') {
-                  <button
-                    type="button"
-                    class="btn btn-complete"
-                    (click)="completeQueue(item)"
-                  >
-                    Complete
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-cancel"
-                    (click)="cancelQueue(item)"
-                  >
-                    Cancel
-                  </button>
-                } @else {
-                  <span class="no-actions">—</span>
-                }
-              </div>
+              @if (itemPendingDelete?.id === item.id) {
+                <div
+                  class="delete-confirm-inline"
+                  role="alertdialog"
+                  aria-labelledby="del-label-{{ item.id }}"
+                  aria-modal="true"
+                >
+                  <span id="del-label-{{ item.id }}" class="confirm-text">
+                    Delete {{ item.queueNo }}?
+                  </span>
+
+                  <div class="confirm-buttons">
+                    <button
+                      type="button"
+                      class="btn btn-confirm-delete"
+                      [disabled]="isDeletingId === item.id"
+                      (click)="confirmDelete(item)"
+                    >
+                      {{ isDeletingId === item.id ? 'Deleting...' : 'Confirm' }}
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-cancel-delete"
+                      [disabled]="isDeletingId === item.id"
+                      (click)="cancelDelete()"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="actions-group">
+                  @if (item.status === 'Waiting') {
+                    <button
+                      type="button"
+                      class="btn btn-call"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="callCustomer(item)"
+                      [attr.aria-label]="'Call customer ' + item.customerName"
+                    >
+                      Call
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-cancel"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="cancelQueue(item)"
+                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
+                    >
+                      Cancel
+                    </button>
+                  } @else if (item.status === 'Called') {
+                    <button
+                      type="button"
+                      class="btn btn-assign"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="assignTable(item)"
+                      [attr.aria-label]="'Assign table to ' + item.customerName"
+                    >
+                      Assign Table
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-cancel"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="cancelQueue(item)"
+                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
+                    >
+                      Cancel
+                    </button>
+                  } @else if (item.status === 'Seated') {
+                    <button
+                      type="button"
+                      class="btn btn-assign"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="completeQueue(item)"
+                      [attr.aria-label]="'Complete queue ticket ' + item.queueNo"
+                    >
+                      Complete
+                    </button>
+                  }
+
+                  @if (
+                    item.status !== 'Completed' &&
+                    item.status !== 'Cancelled'
+                  ) {
+                    <button
+                      type="button"
+                      class="btn btn-delete"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="promptDelete(item)"
+                      [attr.aria-label]="'Delete queue ticket ' + item.queueNo"
+                    >
+                      Delete
+                    </button>
+                  }
+                </div>
+              }
             </td>
           </tr>
         } @empty {
-          <tr>
-            <td colspan="8" class="empty-state-cell">
-              <div class="empty-state">
-                <span class="empty-icon">👥</span>
-                <h3>No Customers in Queue</h3>
-                <p>There are no customers currently waiting in the waitlist.</p>
-              </div>
-            </td>
-          </tr>
+          @if (!isLoading && !alertMessage) {
+            <tr>
+              <td colspan="8" class="empty-state-cell">
+                <div class="empty-state">
+                  <span class="empty-icon">👥</span>
+                  <h3>No Customers in Queue</h3>
+                  <p>
+                    There are no customers currently waiting in the waitlist.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
