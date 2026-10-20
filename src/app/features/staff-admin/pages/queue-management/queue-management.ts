@@ -16,6 +16,7 @@ import {
 export type QueueStatus =
   | 'Waiting'
   | 'Called'
+  | 'Table Ready'
   | 'Seated'
   | 'Cancelled'
   | 'Completed';
@@ -37,8 +38,9 @@ export interface BackendQueueItem {
   peopleAhead?: number;
   status?: string;
   assignedTable?: string;
+  assignedTableId?: number | string | null;
   tableNumber?: string;
-  tableId?: number;
+  tableId?: number | string | null;
 }
 
 export interface QueueItem {
@@ -50,7 +52,8 @@ export interface QueueItem {
   position: number;
   status: QueueStatus;
   assignedTable?: string;
-  tableId?: number;
+  assignedTableId?: number | string | null;
+  tableId?: number | string | null;
 }
 
 @Component({
@@ -172,6 +175,19 @@ export class QueueManagement implements OnInit {
                 t.status ||
                 ((t as any).active === false ? 'Occupied' : 'Available'),
             }));
+
+            // Queue and table requests can finish in either order.
+            // Resolve assignedTableId to its visible table number once tables load.
+            this.queueList = this.queueList.map((item) => {
+              const assignedId = item.assignedTableId ?? item.tableId;
+              const table = this.tables.find(
+                (t) => String(t.id) === String(assignedId)
+              );
+
+              return table
+                ? { ...item, assignedTable: table.tableNumber }
+                : item;
+            });
           }
           this.cdr.markForCheck();
         },
@@ -534,38 +550,46 @@ export class QueueManagement implements OnInit {
 
   private mapBackendQueueItem(raw: BackendQueueItem, idx: number): QueueItem {
     const rawId = raw.id ?? raw.queueId ?? idx + 1;
-    const existing = this.queueList.find((q) => q.id === rawId || q.queueNo === raw.queueNo);
+    const existing = this.queueList.find(
+      (q) => String(q.id) === String(rawId) || q.queueNo === raw.queueNo
+    );
 
-    let customerName = raw.customerName;
-    if (!customerName) {
-      if (raw.customerId) {
-        customerName = `Customer #${raw.customerId}`;
-      } else {
-        customerName = `Guest #${idx + 1}`;
-      }
-    }
+    const customerName =
+      raw.customerName ||
+      (raw.customerId
+        ? `Customer #${raw.customerId}`
+        : `Guest #${idx + 1}`);
 
-    let joinedTime = raw.joinedTime;
-    if (!joinedTime) {
-      const dt = raw.joinedAt || raw.createdAt;
-      if (dt) {
-        const parts = dt.split('T');
-        joinedTime = parts[1] ? parts[1].substring(0, 5) : parts[0];
-      } else {
-        joinedTime = '12:00';
-      }
-    }
+    const dt = raw.joinedAt || raw.createdAt;
+    const joinedTime =
+      raw.joinedTime ||
+      (dt
+        ? dt.split('T')[1]?.substring(0, 5) || dt.split('T')[0]
+        : '12:00');
+
+    const assignedTableId = raw.assignedTableId ?? raw.tableId ?? null;
+    const table = this.tables.find(
+      (t) => String(t.id) === String(assignedTableId)
+    );
 
     return {
       id: rawId,
-      queueNo: raw.queueNo || raw.ticketNumber || `Q-${String(idx + 1).padStart(3, '0')}`,
+      queueNo:
+        raw.queueNo ||
+        raw.ticketNumber ||
+        `Q-${String(idx + 1).padStart(3, '0')}`,
       customerName,
       guests: raw.numberOfPeople ?? raw.guests ?? 2,
       joinedTime,
-      position: raw.position ?? (idx + 1),
+      position: raw.position ?? idx + 1,
       status: this.normalizeQueueStatus(raw.status),
-      assignedTable: raw.assignedTable || raw.tableNumber || existing?.assignedTable,
-      tableId: raw.tableId,
+      assignedTable:
+        raw.assignedTable ||
+        raw.tableNumber ||
+        table?.tableNumber ||
+        existing?.assignedTable,
+      assignedTableId,
+      tableId: assignedTableId,
     };
   }
 
@@ -575,6 +599,8 @@ export class QueueManagement implements OnInit {
     switch (s) {
       case 'CALLED':
         return 'Called';
+      case 'TABLE_READY':
+        return 'Table Ready';
       case 'SEATED':
         return 'Seated';
       case 'CANCELLED':
