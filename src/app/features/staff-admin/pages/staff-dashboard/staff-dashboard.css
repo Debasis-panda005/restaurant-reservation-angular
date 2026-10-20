@@ -1,6 +1,6 @@
 :host {
   display: block;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #1e293b;
 }
 
@@ -10,7 +10,7 @@
   gap: 1.75rem;
 }
 
-/* ── Page header ─────────────────────────────────────── */
+/* ── Page Header ─────────────────────────────────────── */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -25,11 +25,40 @@
   gap: 0.25rem;
 }
 
+.page-badge {
+  display: inline-block;
+  background: #ffedd5;
+  color: #c2410c;
+  padding: 0.18rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid #fed7aa;
+  align-self: flex-start;
+}
+
+.dashboard-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.dashboard-subtitle {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
 }
 
+/* ── Refresh Button ──────────────────────────────────── */
 .btn-refresh {
   display: inline-flex;
   align-items: center;
@@ -72,99 +101,15 @@
   animation: spin 0.8s linear infinite;
 }
 
-.page-badge {
-  display: inline-block;
-  background: #ffedd5;
-  color: #c2410c;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.3rem;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.dashboard-title {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.dashboard-subtitle {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin: 0;
-}
-
-/* ── Metric cards grid ───────────────────────────────── */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-}
-
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.4rem 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
-  border-color: #cbd5e1;
-}
-
-.card-icon {
-  font-size: 1.3rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.25rem;
-}
-
-.icon-blue  { background: #eff6ff; }
-.icon-amber { background: #fff7ed; }
-.icon-purple{ background: #f5f3ff; }
-.icon-green { background: #ecfdf5; }
-
-.card-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.card-value {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.1;
-}
-
-.card-hint {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.15rem;
-}
-
-/* ── Loading indicator ───────────────────────────────── */
+/* ── Loading State ───────────────────────────────────── */
 .dashboard-loading {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   padding: 0.75rem 1rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -183,13 +128,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ── Error alert ─────────────────────────────────────── */
+/* ── Error Alert ─────────────────────────────────────── */
 .dashboard-alert {
   display: flex;
   align-items: center;
@@ -207,7 +146,7 @@
   background: transparent;
   border: none;
   color: #991b1b;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
   padding: 0 0.25rem;
   line-height: 1;
@@ -215,6 +154,44 @@
 
 .alert-dismiss-btn:hover {
   color: #7f1d1d;
+}
+
+/* ── Metric Cards Grid ───────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #cbd5e1;
+  transition: background 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
 .card-link {
@@ -228,6 +205,61 @@
   outline-offset: 3px;
 }
 
+.card-icon {
+  font-size: 1.35rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+}
+
+.icon-blue   { background: #eff6ff; color: #1d4ed8; }
+.icon-amber  { background: #fff7ed; color: #c2410c; }
+.icon-purple { background: #f5f3ff; color: #7c3aed; }
+.icon-green  { background: #ecfdf5; color: #047857; }
+
+.card:has(.icon-blue):hover::before   { background: #3b82f6; }
+.card:has(.icon-amber):hover::before  { background: #f59e0b; }
+.card:has(.icon-purple):hover::before { background: #8b5cf6; }
+.card:has(.icon-green):hover::before  { background: #10b981; }
+
+.card-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-value {
+  font-size: 2.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.card-hint {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover .card-hint {
+  color: #ea580c;
+  transform: translateX(3px);
+}
+
+/* ── Responsive Mobile ───────────────────────────────── */
 @media (max-width: 640px) {
   .dashboard-header {
     flex-direction: column;
@@ -236,5 +268,9 @@
 
   .btn-refresh {
     align-self: flex-start;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
   }
 }
