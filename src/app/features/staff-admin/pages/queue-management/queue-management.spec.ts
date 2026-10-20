@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -296,7 +296,7 @@ describe('QueueManagement', () => {
     expect(seatedItem.status).toBe('Seated');
   });
 
-  it('should verify absence of any COMPLETED request when completeQueue is invoked', () => {
+  it('should call PUT /api/staff/queue/:id/status?status=COMPLETED when completeQueue is invoked on a Seated item', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/staff/queue').flush(mockQueueData);
     httpMock.expectOne('/api/staff/tables').flush(mockTablesData);
@@ -306,10 +306,21 @@ describe('QueueManagement', () => {
 
     component.completeQueue(seatedItem);
 
-    httpMock.expectNone(
+    const putReq = httpMock.expectOne(
       '/api/staff/queue/3/status?status=COMPLETED'
     );
-    expect(seatedItem.status).toBe('Seated');
+    expect(putReq.request.method).toBe('PUT');
+    putReq.flush({
+      id: 3,
+      status: 'COMPLETED',
+    });
+
+    expect(seatedItem.status).toBe('Completed');
+    expect(seatedItem.assignedTable).toBeUndefined();
+
+    // Reloads data
+    httpMock.expectOne('/api/staff/queue').flush([]);
+    httpMock.expectOne('/api/staff/tables').flush([]);
   });
 
   it('should handle API failure without incorrectly changing local status', () => {
@@ -618,5 +629,394 @@ describe('QueueManagement', () => {
     expect(component.itemPendingDelete).toBeNull();
     expect(component.queueList.length).toBe(3);
     expect(component.alertMessage).toContain('Failed to delete queue entry Q-001');
+  });
+
+  it('should render Seat and Cancel buttons for Table Ready status, and Complete button for Seated status', () => {
+    const tableReadyQueueData: BackendQueueItem[] = [
+      {
+        id: 1,
+        ticketNumber: 'Q-001',
+        customerName: 'Seated Customer',
+        numberOfPeople: 2,
+        status: 'SEATED',
+        assignedTableId: 1,
+      },
+      {
+        id: 2,
+        ticketNumber: 'Q-002',
+        customerName: 'Ready Customer',
+        numberOfPeople: 4,
+        status: 'TABLE_READY',
+        assignedTableId: 9,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(tableReadyQueueData);
+    httpMock.expectOne('/api/staff/tables').flush([
+      { id: 1, tableNumber: 'T-01', capacity: 2, status: 'Occupied' },
+      { id: 9, tableNumber: 'T-09', capacity: 4, status: 'Available' },
+    ]);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    // Verify Seated customer has Complete button
+    const completeBtns = Array.from(compiled.querySelectorAll('.btn-assign')).filter(
+      (b) => b.textContent?.trim() === 'Complete'
+    );
+    expect(completeBtns.length).toBe(1);
+
+    // Verify Ready Customer has Seat and Cancel buttons
+    const seatBtn = Array.from(compiled.querySelectorAll('.btn-assign')).find(
+      (b) => b.textContent?.trim() === 'Seat'
+    );
+    expect(seatBtn).toBeDefined();
+
+    const cancelBtns = Array.from(compiled.querySelectorAll('.btn-cancel'));
+    expect(cancelBtns.length).toBeGreaterThan(0);
+  });
+
+  it('should allow seating a customer in Table Ready status using their assigned table', () => {
+    const tableReadyQueueData: BackendQueueItem[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        ticketNumber: 'Q-003',
+        customerName: 'Sneha Rao',
+        numberOfPeople: 4,
+        status: 'TABLE_READY',
+        assignedTableId: 9,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(tableReadyQueueData);
+    httpMock.expectOne('/api/staff/tables').flush([
+      { id: 9, restaurantId: 2, tableNumber: 'T-09', capacity: 4, status: 'Available' },
+    ]);
+
+    const item = component.queueList[0];
+    expect(item.status).toBe('Table Ready');
+    expect(item.assignedTable).toBe('T-09');
+
+    component.seatCustomer(item);
+
+    // Queue status update to SEATED
+    const queuePut = httpMock.expectOne('/api/staff/queue/3/status?status=SEATED');
+    expect(queuePut.request.method).toBe('PUT');
+    queuePut.flush({});
+
+    // Table status update to OCCUPIED on T-09
+    const tablePut = httpMock.expectOne('/api/staff/tables/9');
+    expect(tablePut.request.method).toBe('PUT');
+    expect(tablePut.request.body).toEqual({
+      restaurantId: 2,
+      tableNumber: 'T-09',
+      capacity: 4,
+      status: 'OCCUPIED',
+    });
+    tablePut.flush({
+      id: 9,
+      restaurantId: 2,
+      tableNumber: 'T-09',
+      capacity: 4,
+      status: 'OCCUPIED',
+    });
+
+    expect(item.status).toBe('Seated');
+
+    // Reloads data
+    httpMock.expectOne('/api/staff/queue').flush([]);
+    httpMock.expectOne('/api/staff/tables').flush([]);
+  });
+
+  it('should not fabricate table numbers when assignedTableId is null or missing', () => {
+    const nullTableQueue: BackendQueueItem[] = [
+      {
+        id: 1,
+        ticketNumber: 'Q-001',
+        customerName: 'Aarav Patel',
+        numberOfPeople: 2,
+        status: 'WAITING',
+        assignedTableId: null,
+      },
+      {
+        id: 2,
+        ticketNumber: 'Q-002',
+        customerName: 'Diya Sen',
+        numberOfPeople: 2,
+        status: 'CALLED',
+        assignedTableId: null,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(nullTableQueue);
+    httpMock.expectOne('/api/staff/tables').flush(mockTablesData);
+
+    expect(component.queueList[0].assignedTable).toBeUndefined();
+    expect(component.queueList[1].assignedTable).toBeUndefined();
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const tableBadges = compiled.querySelectorAll('.table-badge');
+    expect(tableBadges[0].textContent?.trim()).toBe('—');
+    expect(tableBadges[1].textContent?.trim()).toBe('—');
+  });
+
+  it('should correctly match 4-person queue item with T-09 capacity 4 in restaurant 2 (Issue 6)', () => {
+    const route = TestBed.inject(ActivatedRoute);
+    vi.spyOn(route.snapshot.queryParamMap, 'get').mockImplementation(
+      (key: string) => (key === 'restaurantId' ? '2' : null)
+    );
+
+    const queue4Guests: BackendQueueItem[] = [
+      {
+        id: 4,
+        restaurantId: 2,
+        ticketNumber: 'Q-004',
+        customerName: 'Ananya Roy',
+        numberOfPeople: 4,
+        status: 'CALLED',
+        assignedTableId: null,
+      },
+    ];
+
+    const tablesWithT09: any[] = [
+      { id: 1, restaurantId: 2, tableNumber: 'T-01', capacity: 2, status: 'AVAILABLE' },
+      { id: 9, restaurantId: 2, tableNumber: 'T-09', capacity: 4, status: 'AVAILABLE' },
+    ];
+
+    component.loadData();
+    httpMock.expectOne('/api/staff/queue/restaurant/2').flush(queue4Guests);
+    httpMock.expectOne('/api/staff/tables/restaurant/2').flush(tablesWithT09);
+
+    const item = component.queueList[0];
+    expect(item.status).toBe('Called');
+    expect(item.guests).toBe(4);
+
+    // Call assignTable
+    component.assignTable(item);
+
+    const queuePut = httpMock.expectOne('/api/staff/queue/4/status?status=SEATED');
+    expect(queuePut.request.method).toBe('PUT');
+    queuePut.flush({});
+
+    const tablePut = httpMock.expectOne('/api/staff/tables/9');
+    expect(tablePut.request.method).toBe('PUT');
+    expect(tablePut.request.body).toEqual({
+      restaurantId: 2,
+      tableNumber: 'T-09',
+      capacity: 4,
+      status: 'OCCUPIED',
+    });
+    tablePut.flush({
+      id: 9,
+      restaurantId: 2,
+      tableNumber: 'T-09',
+      capacity: 4,
+      status: 'OCCUPIED',
+    });
+
+    expect(item.status).toBe('Seated');
+    expect(item.assignedTable).toBe('T-09');
+
+    // Reloads data
+    httpMock.expectOne('/api/staff/queue/restaurant/2').flush([]);
+    httpMock.expectOne('/api/staff/tables/restaurant/2').flush([]);
+  });
+
+  it('should display T-09 for queue entry ID 3 with assignedTableId: 3 and restaurant ID 2 when queue loads before tables (async)', () => {
+    const queueEntry3: BackendQueueItem[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        ticketNumber: 'Q-003',
+        customerName: 'Sneha Rao',
+        numberOfPeople: 4,
+        status: 'TABLE_READY',
+        assignedTableId: 3,
+      },
+    ];
+
+    const table3T09: any[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        tableNumber: 'T-09',
+        capacity: 4,
+        status: 'RESERVED',
+      },
+    ];
+
+    fixture.detectChanges();
+    // 1. Queue response arrives first
+    const queueReq = httpMock.expectOne('/api/staff/queue');
+    queueReq.flush(queueEntry3);
+
+    // 2. Tables response arrives second
+    const tablesReq = httpMock.expectOne('/api/staff/tables');
+    tablesReq.flush(table3T09);
+
+    fixture.detectChanges();
+    expect(component.queueList.length).toBe(1);
+    expect(component.queueList[0].status).toBe('Table Ready');
+    expect(component.queueList[0].assignedTableId).toBe(3);
+    expect(component.queueList[0].assignedTable).toBe('T-09');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const badge = compiled.querySelector('.table-badge');
+    expect(badge?.textContent?.trim()).toBe('T-09');
+  });
+
+  it('should display T-09 for queue entry ID 3 with assignedTableId: 3 and restaurant ID 2 when tables load before queue (async)', () => {
+    const queueEntry3: BackendQueueItem[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        ticketNumber: 'Q-003',
+        customerName: 'Sneha Rao',
+        numberOfPeople: 4,
+        status: 'TABLE_READY',
+        assignedTableId: 3,
+      },
+    ];
+
+    const table3T09: any[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        tableNumber: 'T-09',
+        capacity: 4,
+        status: 'RESERVED',
+      },
+    ];
+
+    fixture.detectChanges();
+    // 1. Tables response arrives first
+    const tablesReq = httpMock.expectOne('/api/staff/tables');
+    tablesReq.flush(table3T09);
+
+    // 2. Queue response arrives second
+    const queueReq = httpMock.expectOne('/api/staff/queue');
+    queueReq.flush(queueEntry3);
+
+    fixture.detectChanges();
+    expect(component.queueList.length).toBe(1);
+    expect(component.queueList[0].status).toBe('Table Ready');
+    expect(component.queueList[0].assignedTableId).toBe(3);
+    expect(component.queueList[0].assignedTable).toBe('T-09');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const badge = compiled.querySelector('.table-badge');
+    expect(badge?.textContent?.trim()).toBe('T-09');
+  });
+
+  it('should not display SHARED_TABLES fallback records when backend is reachable but returns empty tables array', () => {
+    const queueEntry: BackendQueueItem[] = [
+      {
+        id: 3,
+        restaurantId: 2,
+        ticketNumber: 'Q-003',
+        customerName: 'Sneha Rao',
+        numberOfPeople: 4,
+        status: 'TABLE_READY',
+        assignedTableId: 3,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(queueEntry);
+    httpMock.expectOne('/api/staff/tables').flush([]);
+
+    fixture.detectChanges();
+    expect(component.queueList.length).toBe(1);
+    expect(component.queueList[0].assignedTable).toBeUndefined();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const badge = compiled.querySelector('.table-badge');
+    expect(badge?.textContent?.trim()).toBe('—');
+  });
+
+  it('should not use SHARED_TABLES fallback records for assignment when backend is reachable but has no tables', () => {
+    const queueEntry: BackendQueueItem[] = [
+      {
+        id: 2,
+        restaurantId: 2,
+        ticketNumber: 'Q-002',
+        customerName: 'Priya Das',
+        numberOfPeople: 4,
+        status: 'CALLED',
+        assignedTableId: null,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(queueEntry);
+    httpMock.expectOne('/api/staff/tables').flush([]);
+
+    const item = component.queueList[0];
+    component.assignTable(item);
+
+    expect(component.alertMessage).toContain('No available table found with capacity for 4 guests');
+    expect(item.status).toBe('Called');
+    httpMock.expectNone('/api/staff/queue/2/status?status=SEATED');
+  });
+
+  it('should not display fallback records when active restaurant ID differs from fallback record restaurant ID', () => {
+    const queueEntry: BackendQueueItem[] = [
+      {
+        id: 5,
+        restaurantId: 2,
+        ticketNumber: 'Q-005',
+        customerName: 'Vikram Seth',
+        numberOfPeople: 2,
+        status: 'WAITING',
+        assignedTableId: 1,
+      },
+    ];
+
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/queue').flush(queueEntry);
+    const tablesReq = httpMock.expectOne('/api/staff/tables');
+    tablesReq.error(new ProgressEvent('Network Error'), { status: 500, statusText: 'Server Error' });
+
+    fixture.detectChanges();
+    expect(component.queueList[0].assignedTable).toBeUndefined();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const badge = compiled.querySelector('.table-badge');
+    expect(badge?.textContent?.trim()).toBe('—');
+  });
+
+  it('should not assign fallback records when active restaurant ID differs from fallback record restaurant ID', () => {
+    const route = TestBed.inject(ActivatedRoute);
+    vi.spyOn(route.snapshot.queryParamMap, 'get').mockImplementation(
+      (key: string) => (key === 'restaurantId' ? '3' : null)
+    );
+
+    const queueEntry: BackendQueueItem[] = [
+      {
+        id: 6,
+        restaurantId: 3,
+        ticketNumber: 'Q-006',
+        customerName: 'Kavita Nair',
+        numberOfPeople: 2,
+        status: 'CALLED',
+        assignedTableId: null,
+      },
+    ];
+
+    component.loadData();
+    httpMock.expectOne('/api/staff/queue/restaurant/3').flush(queueEntry);
+    const tablesReq = httpMock.expectOne('/api/staff/tables/restaurant/3');
+    tablesReq.error(new ProgressEvent('Network Error'), { status: 500, statusText: 'Server Error' });
+
+    const item = component.queueList[0];
+    component.assignTable(item);
+
+    expect(component.alertMessage).toContain('No available table found with capacity for 2 guests');
+    expect(item.status).toBe('Called');
+    httpMock.expectNone('/api/staff/queue/6/status?status=SEATED');
   });
 });

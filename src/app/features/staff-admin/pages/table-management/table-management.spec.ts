@@ -133,7 +133,7 @@ describe('TableManagement', () => {
     expect(component.updatingTableId).toBeNull();
   });
 
-  it('should not send PUT request when table status is Reserved', () => {
+  it('should toggle Reserved table to Available via PUT /api/staff/tables/:id', () => {
     fixture.detectChanges();
 
     const loadReq = httpMock.expectOne('/api/staff/tables');
@@ -144,8 +144,24 @@ describe('TableManagement', () => {
 
     component.toggleStatus(reservedTable);
 
-    httpMock.expectNone('/api/staff/tables/3');
-    expect(reservedTable.status).toBe('Reserved');
+    const putReq = httpMock.expectOne('/api/staff/tables/3');
+    expect(putReq.request.method).toBe('PUT');
+    expect(putReq.request.body).toEqual({
+      restaurantId: 1,
+      tableNumber: 'T-03',
+      capacity: 6,
+      status: 'AVAILABLE',
+    });
+    putReq.flush({
+      id: 3,
+      restaurantId: 1,
+      tableNumber: 'T-03',
+      capacity: 6,
+      status: 'AVAILABLE',
+    });
+
+    expect(reservedTable.status).toBe('Available');
+    expect(component.updatingTableId).toBeNull();
   });
 
   it('should handle PUT error gracefully and preserve previous status', () => {

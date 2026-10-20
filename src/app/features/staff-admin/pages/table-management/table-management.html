@@ -61,7 +61,7 @@
                 addTableForm.controls.restaurantId.invalid &&
                 (addTableForm.controls.restaurantId.touched || addTableForm.controls.restaurantId.dirty)
               "
-              placeholder="e.g. 2"
+              placeholder="e.g. 1"
               min="1"
             />
             @if (
@@ -179,7 +179,7 @@
                 editTableForm.controls.restaurantId.invalid &&
                 (editTableForm.controls.restaurantId.touched || editTableForm.controls.restaurantId.dirty)
               "
-              placeholder="e.g. 2"
+              placeholder="e.g. 1"
               min="1"
             />
             @if (
@@ -362,7 +362,7 @@
               >
                 Mark Occupied
               </button>
-            } @else if (table.status === 'Occupied') {
+            } @else {
               <button
                 type="button"
                 class="btn-action btn-mark-available"
@@ -371,15 +371,6 @@
                 [attr.aria-label]="'Mark table ' + table.tableNumber + ' available'"
               >
                 Mark Available
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="btn-action btn-reserved"
-                disabled
-                title="Reserved tables cannot be changed directly"
-              >
-                Reserved
               </button>
             }
           </div>

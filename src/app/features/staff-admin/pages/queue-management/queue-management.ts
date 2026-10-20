@@ -12,6 +12,7 @@ import {
   RestaurantTable,
   SHARED_TABLES,
 } from '../table-management/table-management';
+import { AuthService } from '../../../../core/services/auth.service';
 
 export type QueueStatus =
   | 'Waiting'
@@ -45,6 +46,7 @@ export interface BackendQueueItem {
 
 export interface QueueItem {
   id: number | string;
+  restaurantId?: number;
   queueNo: string;
   customerName: string;
   guests: number;
@@ -65,10 +67,12 @@ export interface QueueItem {
 export class QueueManagement implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly authService = inject(AuthService, { optional: true });
   private readonly cdr = inject(ChangeDetectorRef);
 
   queueList: QueueItem[] = [];
   tables: RestaurantTable[] = [];
+  tablesLoadedFromBackend = false;
   alertMessage: string | null = null;
   isLoading = true;
   isUpdatingId: number | string | null = null;
@@ -92,10 +96,22 @@ export class QueueManagement implements OnInit {
     }),
   });
 
+  getActiveRestaurantId(): number | null {
+    const fromQuery = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (fromQuery && !isNaN(Number(fromQuery)) && Number(fromQuery) > 0) {
+      return Number(fromQuery);
+    }
+    const fromUser = this.authService?.currentUser()?.restaurantId;
+    if (fromUser && !isNaN(Number(fromUser)) && Number(fromUser) > 0) {
+      return Number(fromUser);
+    }
+    return null;
+  }
+
   ngOnInit(): void {
-    const queryRestaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
-    if (queryRestaurantId && !isNaN(Number(queryRestaurantId))) {
-      this.addQueueForm.patchValue({ restaurantId: Number(queryRestaurantId) });
+    const activeRestId = this.getActiveRestaurantId();
+    if (activeRestId) {
+      this.addQueueForm.patchValue({ restaurantId: activeRestId });
     }
     this.loadData();
   }
@@ -107,7 +123,7 @@ export class QueueManagement implements OnInit {
     }
     this.cdr.markForCheck();
 
-    const restaurantId = this.route?.snapshot.queryParamMap.get('restaurantId');
+    const restaurantId = this.getActiveRestaurantId();
     const queueUrl = restaurantId
       ? `/api/staff/queue/restaurant/${restaurantId}`
       : '/api/staff/queue';
@@ -131,6 +147,7 @@ export class QueueManagement implements OnInit {
             this.mapBackendQueueItem(item, idx)
           );
           this.recalculatePositions();
+          this.reconcileQueueTableAssignments();
           this.isLoading = false;
           this.cdr.markForCheck();
         },
@@ -164,38 +181,31 @@ export class QueueManagement implements OnInit {
       )
       .subscribe({
         next: (tablesData) => {
+          this.tablesLoadedFromBackend = true;
           const list = Array.isArray(tablesData) ? tablesData : [];
-          if (list.length > 0) {
-            this.tables = list.map((t) => ({
-              id: t.id,
-              restaurantId: t.restaurantId ?? (restaurantId ? Number(restaurantId) : 1),
-              tableNumber: t.tableNumber || `T-${t.id}`,
-              capacity: t.capacity || 2,
-              status:
-                t.status ||
-                ((t as any).active === false ? 'Occupied' : 'Available'),
-            }));
+          this.tables = list.map((t: any) => ({
+            id: t.id,
+            restaurantId:
+              t.restaurantId ?? (restaurantId ? Number(restaurantId) : undefined),
+            tableNumber: t.tableNumber || `T-${t.id}`,
+            capacity: Number(t.capacity) || 2,
+            status: this.normalizeTableStatus(
+              t.status ?? (t.active === false ? 'OCCUPIED' : 'AVAILABLE')
+            ),
+          }));
 
-            // Queue and table requests can finish in either order.
-            // Resolve assignedTableId to its visible table number once tables load.
-            this.queueList = this.queueList.map((item) => {
-              const assignedId = item.assignedTableId ?? item.tableId;
-              const table = this.tables.find(
-                (t) => String(t.id) === String(assignedId)
-              );
-
-              return table
-                ? { ...item, assignedTable: table.tableNumber }
-                : item;
-            });
-          }
+          // Resolve assignedTableId to its visible table number once tables load.
+          this.reconcileQueueTableAssignments();
           this.cdr.markForCheck();
         },
         error: (error) => {
+          this.tablesLoadedFromBackend = false;
           console.warn(
             'Failed to load tables for queue assignment from backend, using fallback tables:',
             error
           );
+          this.reconcileQueueTableAssignments();
+          this.cdr.markForCheck();
         },
       });
   }
@@ -389,23 +399,34 @@ export class QueueManagement implements OnInit {
     if (this.isUpdatingId === item.id) {
       return;
     }
-    // Enforce valid transition: CALLED -> SEATED only
-    if (item.status !== 'Called') {
+    // Enforce valid transition: CALLED or TABLE_READY -> SEATED
+    if (item.status !== 'Called' && item.status !== 'Table Ready') {
       return;
     }
 
     this.alertMessage = null;
 
-    const tablesSource =
-      this.tables.length > 0 ? this.tables : SHARED_TABLES;
+    const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
 
-    const suitableTable = tablesSource
-      .filter((t) => t.status === 'Available' && t.capacity >= item.guests)
-      .sort((a, b) => a.capacity - b.capacity)[0];
+    let suitableTable: RestaurantTable | undefined;
+    if (item.assignedTableId) {
+      suitableTable = this.findTable(Number(item.assignedTableId), itemRestId);
+    }
+
+    if (!suitableTable) {
+      const candidates = this.getCandidateTables(itemRestId);
+      suitableTable = candidates
+        .filter((t) => {
+          const isAvail = this.normalizeTableStatus(t.status) === 'Available';
+          const fitsCapacity = Number(t.capacity) >= Number(item.guests);
+          return isAvail && fitsCapacity;
+        })
+        .sort((a, b) => Number(a.capacity) - Number(b.capacity))[0];
+    }
 
     // Ensure a table is assigned before attempting transition
     if (!suitableTable || !suitableTable.id) {
-      this.alertMessage = `No available table found with capacity for ${item.guests} guests (${item.customerName} remains in Called status).`;
+      this.alertMessage = `No available table found with capacity for ${item.guests} guests (${item.customerName} remains in ${item.status} status).`;
       this.cdr.markForCheck();
       return;
     }
@@ -415,9 +436,8 @@ export class QueueManagement implements OnInit {
 
     const currentRestaurantId =
       suitableTable.restaurantId ??
-      (this.route?.snapshot.queryParamMap.get('restaurantId')
-        ? Number(this.route.snapshot.queryParamMap.get('restaurantId'))
-        : 1);
+      itemRestId ??
+      1;
 
     const tablePayload = {
       restaurantId: currentRestaurantId,
@@ -448,12 +468,14 @@ export class QueueManagement implements OnInit {
         next: () => {
           item.status = 'Seated';
           item.assignedTable = suitableTable.tableNumber;
+          item.assignedTableId = suitableTable.id;
           suitableTable.status = 'Occupied';
 
           const sharedMatch = SHARED_TABLES.find(
             (t) =>
-              t.id === suitableTable.id ||
-              t.tableNumber === suitableTable.tableNumber
+              t.id === suitableTable.id &&
+              (!suitableTable.restaurantId ||
+                Number(t.restaurantId) === Number(suitableTable.restaurantId))
           );
           if (sharedMatch) {
             sharedMatch.status = 'Occupied';
@@ -529,8 +551,57 @@ export class QueueManagement implements OnInit {
   }
 
   completeQueue(item: QueueItem): void {
-    // Backend queue API does not support COMPLETED status; maintain Seated status without invalid mutations
-    return;
+    if (this.isUpdatingId === item.id) {
+      return;
+    }
+    if (item.status !== 'Seated') {
+      return;
+    }
+
+    this.alertMessage = null;
+    this.isUpdatingId = item.id;
+    this.cdr.markForCheck();
+
+    this.http
+      .put<BackendQueueItem>(
+        `/api/staff/queue/${item.id}/status?status=COMPLETED`,
+        {}
+      )
+      .pipe(
+        finalize(() => {
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          item.status = 'Completed';
+          item.assignedTable = undefined;
+          item.assignedTableId = null;
+          this.recalculatePositions();
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+          this.loadData();
+        },
+        error: (error: HttpErrorResponse | any) => {
+          console.error(`Failed to complete queue entry ${item.id}:`, error);
+          if (error?.status === 401) {
+            this.alertMessage = 'Authentication required. Please log in again.';
+          } else if (error?.status === 403) {
+            this.alertMessage =
+              'Access denied. Staff or Admin privileges are required.';
+          } else if (error?.status === 409) {
+            this.alertMessage =
+              error?.error?.message ||
+              'Only seated customers can be marked as completed.';
+          } else {
+            this.alertMessage = `Failed to complete queue entry ${item.customerName}. Check backend connection.`;
+          }
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+          this.loadData(true);
+        },
+      });
   }
 
   seatCustomer(item: QueueItem): void {
@@ -548,11 +619,81 @@ export class QueueManagement implements OnInit {
     }
   }
 
+  private findTable(
+    tableId: number,
+    targetRestaurantId?: number | null
+  ): RestaurantTable | undefined {
+    const restId = targetRestaurantId ?? this.getActiveRestaurantId();
+
+    // 1. When backend is reachable, search ONLY this.tables.
+    if (this.tablesLoadedFromBackend || this.tables.length > 0) {
+      return this.tables.find(
+        (t) =>
+          Number(t.id) === Number(tableId) &&
+          (!restId || !t.restaurantId || Number(t.restaurantId) === Number(restId))
+      );
+    }
+
+    // 2. Only if backend is NOT reachable, check SHARED_TABLES fallback.
+    // Fallback records cannot be used if active restaurant ID differs from fallback record's restaurant ID.
+    return SHARED_TABLES.find(
+      (t) =>
+        Number(t.id) === Number(tableId) &&
+        (!restId || Number(t.restaurantId) === Number(restId))
+    );
+  }
+
+  private getCandidateTables(
+    targetRestaurantId?: number | null
+  ): RestaurantTable[] {
+    const restId = targetRestaurantId ?? this.getActiveRestaurantId();
+
+    // 1. When backend is reachable, use ONLY this.tables.
+    if (this.tablesLoadedFromBackend || this.tables.length > 0) {
+      return this.tables.filter(
+        (t) =>
+          !restId || !t.restaurantId || Number(t.restaurantId) === Number(restId)
+      );
+    }
+
+    // 2. Only if backend is NOT reachable, use SHARED_TABLES fallback.
+    // Fallback records cannot be used if active restaurant ID differs from fallback record's restaurant ID.
+    return SHARED_TABLES.filter(
+      (t) => !restId || Number(t.restaurantId) === Number(restId)
+    );
+  }
+
+  private reconcileQueueTableAssignments(): void {
+    if (!this.queueList.length) return;
+
+    this.queueList = this.queueList.map((item) => {
+      const assignedId = item.assignedTableId ?? item.tableId;
+      if (!assignedId || Number(assignedId) <= 0) {
+        return { ...item, assignedTable: undefined };
+      }
+
+      const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
+      const match = this.findTable(Number(assignedId), itemRestId);
+
+      return {
+        ...item,
+        assignedTable: match ? match.tableNumber : undefined,
+      };
+    });
+  }
+
+  private normalizeTableStatus(
+    status?: string
+  ): 'Available' | 'Occupied' | 'Reserved' {
+    if (!status) return 'Available';
+    const s = status.toUpperCase();
+    if (s === 'OCCUPIED') return 'Occupied';
+    if (s === 'RESERVED') return 'Reserved';
+    return 'Available';
+  }
+
   private mapBackendQueueItem(raw: BackendQueueItem, idx: number): QueueItem {
     const rawId = raw.id ?? raw.queueId ?? idx + 1;
-    const existing = this.queueList.find(
-      (q) => String(q.id) === String(rawId) || q.queueNo === raw.queueNo
-    );
 
     const customerName =
       raw.customerName ||
@@ -567,27 +708,44 @@ export class QueueManagement implements OnInit {
         ? dt.split('T')[1]?.substring(0, 5) || dt.split('T')[0]
         : '12:00');
 
-    const assignedTableId = raw.assignedTableId ?? raw.tableId ?? null;
-    const table = this.tables.find(
-      (t) => String(t.id) === String(assignedTableId)
-    );
+    const rawTableId = raw.assignedTableId ?? raw.tableId;
+    const hasValidTableId =
+      rawTableId !== null &&
+      rawTableId !== undefined &&
+      rawTableId !== '' &&
+      Number(rawTableId) > 0;
+    const assignedTableId = hasValidTableId ? Number(rawTableId) : null;
+
+    const restaurantId =
+      raw.restaurantId && !isNaN(Number(raw.restaurantId))
+        ? Number(raw.restaurantId)
+        : (this.getActiveRestaurantId() ?? undefined);
+
+    let assignedTable: string | undefined = undefined;
+    if (assignedTableId) {
+      const match = this.findTable(assignedTableId, restaurantId);
+      if (match) {
+        assignedTable = match.tableNumber;
+      }
+    } else if (raw.assignedTable && raw.assignedTable.trim() && raw.assignedTable !== '—') {
+      assignedTable = raw.assignedTable.trim();
+    } else if (raw.tableNumber && raw.tableNumber.trim()) {
+      assignedTable = raw.tableNumber.trim();
+    }
 
     return {
       id: rawId,
+      restaurantId,
       queueNo:
         raw.queueNo ||
         raw.ticketNumber ||
         `Q-${String(idx + 1).padStart(3, '0')}`,
       customerName,
-      guests: raw.numberOfPeople ?? raw.guests ?? 2,
+      guests: Number(raw.numberOfPeople ?? raw.guests ?? 2),
       joinedTime,
       position: raw.position ?? idx + 1,
       status: this.normalizeQueueStatus(raw.status),
-      assignedTable:
-        raw.assignedTable ||
-        raw.tableNumber ||
-        table?.tableNumber ||
-        existing?.assignedTable,
+      assignedTable,
       assignedTableId,
       tableId: assignedTableId,
     };

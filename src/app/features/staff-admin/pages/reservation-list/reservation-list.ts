@@ -8,6 +8,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 
 export type ReservationStatus =
   | 'Pending'
@@ -58,6 +59,7 @@ export interface ReservationItem {
 export class ReservationList implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly authService = inject(AuthService, { optional: true });
   private readonly cdr = inject(ChangeDetectorRef);
 
   reservations: ReservationItem[] = [];
@@ -84,10 +86,22 @@ export class ReservationList implements OnInit {
     }),
   });
 
+  getActiveRestaurantId(): number | null {
+    const fromQuery = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (fromQuery && !isNaN(Number(fromQuery)) && Number(fromQuery) > 0) {
+      return Number(fromQuery);
+    }
+    const fromUser = this.authService?.currentUser()?.restaurantId;
+    if (fromUser && !isNaN(Number(fromUser)) && Number(fromUser) > 0) {
+      return Number(fromUser);
+    }
+    return null;
+  }
+
   ngOnInit(): void {
-    const queryRestaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
-    if (queryRestaurantId && !isNaN(Number(queryRestaurantId))) {
-      this.createReservationForm.patchValue({ restaurantId: Number(queryRestaurantId) });
+    const activeRestId = this.getActiveRestaurantId();
+    if (activeRestId) {
+      this.createReservationForm.patchValue({ restaurantId: activeRestId });
     }
     this.fetchReservations();
   }
@@ -138,7 +152,9 @@ export class ReservationList implements OnInit {
       )
       .subscribe({
         next: () => {
-          const currentRestaurantId = this.createReservationForm.value.restaurantId;
+          const currentRestaurantId =
+            this.createReservationForm.value.restaurantId ??
+            this.getActiveRestaurantId();
           this.createReservationForm.reset({
             restaurantId: currentRestaurantId ?? null,
             customerId: null,
@@ -181,7 +197,7 @@ export class ReservationList implements OnInit {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    const restaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    const restaurantId = this.getActiveRestaurantId();
     const url = restaurantId
       ? `/api/staff/reservations/restaurant/${restaurantId}`
       : '/api/staff/reservations';

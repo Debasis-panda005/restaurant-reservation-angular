@@ -72,6 +72,10 @@ export class AuthService {
         const resolvedRole = extractUserRole(userData) || userData?.role || '';
         const user: AuthUser = {
           id: userData.id,
+          restaurantId:
+            userData.restaurantId && !isNaN(Number(userData.restaurantId))
+              ? Number(userData.restaurantId)
+              : undefined,
           name: userData.name,
           email: userData.email,
           role: resolvedRole,
@@ -179,6 +183,10 @@ export class AuthService {
 
     const user: AuthUser = {
       id: response.id,
+      restaurantId:
+        response.restaurantId && !isNaN(Number(response.restaurantId))
+          ? Number(response.restaurantId)
+          : undefined,
       name: response.name,
       email: response.email,
       role: canonicalRole,

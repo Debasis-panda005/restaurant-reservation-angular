@@ -222,6 +222,7 @@
                 class="status-badge"
                 [class.status-waiting]="item.status === 'Waiting'"
                 [class.status-called]="item.status === 'Called'"
+                [class.status-table-ready]="item.status === 'Table Ready'"
                 [class.status-seated]="item.status === 'Seated'"
                 [class.status-completed]="item.status === 'Completed'"
                 [class.status-cancelled]="item.status === 'Cancelled'"
@@ -299,6 +300,26 @@
                       [attr.aria-label]="'Assign table to ' + item.customerName"
                     >
                       Assign Table
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-cancel"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="cancelQueue(item)"
+                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
+                    >
+                      Cancel
+                    </button>
+                  } @else if (item.status === 'Table Ready') {
+                    <button
+                      type="button"
+                      class="btn btn-assign"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="seatCustomer(item)"
+                      [attr.aria-label]="'Seat customer ' + item.customerName"
+                    >
+                      Seat
                     </button>
 
                     <button

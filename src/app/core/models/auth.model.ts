@@ -9,6 +9,7 @@ export interface AuthResponse {
   accessToken: string;
   tokenType: string;
   id: number;
+  restaurantId?: number;
   name: string;
   email: string;
   role: string;
@@ -16,6 +17,7 @@ export interface AuthResponse {
 
 export interface AuthUser {
   id: number;
+  restaurantId?: number;
   name: string;
   email: string;
   role: string;

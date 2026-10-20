@@ -8,6 +8,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 
 export type TableStatus = 'Available' | 'Occupied' | 'Reserved';
 
@@ -34,12 +35,13 @@ export interface RestaurantTable {
 export const SHARED_TABLES: RestaurantTable[] = [
   { id: 1, restaurantId: 1, tableNumber: 'T-01', capacity: 2, status: 'Available' },
   { id: 2, restaurantId: 1, tableNumber: 'T-02', capacity: 2, status: 'Occupied' },
-  { id: 3, restaurantId: 1, tableNumber: 'T-03', capacity: 4, status: 'Available' },
+  { id: 3, restaurantId: 2, tableNumber: 'T-09', capacity: 4, status: 'Reserved' },
   { id: 4, restaurantId: 1, tableNumber: 'T-04', capacity: 4, status: 'Reserved' },
   { id: 5, restaurantId: 1, tableNumber: 'T-05', capacity: 6, status: 'Occupied' },
   { id: 6, restaurantId: 1, tableNumber: 'T-06', capacity: 6, status: 'Available' },
   { id: 7, restaurantId: 1, tableNumber: 'T-07', capacity: 8, status: 'Reserved' },
   { id: 8, restaurantId: 1, tableNumber: 'T-08', capacity: 4, status: 'Available' },
+  { id: 9, restaurantId: 2, tableNumber: 'T-09', capacity: 4, status: 'Available' },
 ];
 
 @Component({
@@ -51,6 +53,7 @@ export const SHARED_TABLES: RestaurantTable[] = [
 export class TableManagement implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly authService = inject(AuthService, { optional: true });
   private readonly cdr = inject(ChangeDetectorRef);
 
   tables: RestaurantTable[] = [];
@@ -95,10 +98,22 @@ export class TableManagement implements OnInit {
     }),
   });
 
+  getActiveRestaurantId(): number | null {
+    const fromQuery = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (fromQuery && !isNaN(Number(fromQuery)) && Number(fromQuery) > 0) {
+      return Number(fromQuery);
+    }
+    const fromUser = this.authService?.currentUser()?.restaurantId;
+    if (fromUser && !isNaN(Number(fromUser)) && Number(fromUser) > 0) {
+      return Number(fromUser);
+    }
+    return null;
+  }
+
   ngOnInit(): void {
-    const queryRestaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
-    if (queryRestaurantId && !isNaN(Number(queryRestaurantId))) {
-      this.addTableForm.patchValue({ restaurantId: Number(queryRestaurantId) });
+    const activeRestId = this.getActiveRestaurantId();
+    if (activeRestId) {
+      this.addTableForm.patchValue({ restaurantId: activeRestId });
     }
     this.fetchTables();
   }
@@ -117,7 +132,7 @@ export class TableManagement implements OnInit {
     this.editFormErrorMessage = '';
     this.isAddFormVisible = false;
     this.editTableForm.setValue({
-      restaurantId: table.restaurantId ?? 1,
+      restaurantId: table.restaurantId ?? this.getActiveRestaurantId() ?? null,
       tableNumber: table.tableNumber,
       capacity: table.capacity,
     });
@@ -302,9 +317,9 @@ export class TableManagement implements OnInit {
         next: () => {
           this.isAddFormVisible = false;
           this.addTableForm.reset();
-          const queryRestaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
-          if (queryRestaurantId && !isNaN(Number(queryRestaurantId))) {
-            this.addTableForm.patchValue({ restaurantId: Number(queryRestaurantId) });
+          const activeRestId = this.getActiveRestaurantId();
+          if (activeRestId) {
+            this.addTableForm.patchValue({ restaurantId: activeRestId });
           }
           this.formErrorMessage = '';
           this.cdr.markForCheck();
@@ -341,7 +356,7 @@ export class TableManagement implements OnInit {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    const restaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    const restaurantId = this.getActiveRestaurantId();
     const url = restaurantId
       ? `/api/staff/tables/restaurant/${restaurantId}`
       : '/api/staff/tables';
@@ -387,10 +402,11 @@ export class TableManagement implements OnInit {
   }
 
   toggleStatus(table: RestaurantTable): void {
-    if (table.status === 'Reserved' || this.updatingTableId === table.id) {
+    if (this.updatingTableId === table.id) {
       return;
     }
 
+    // Available -> Occupied; Occupied -> Available; Reserved -> Available (release table)
     const nextStatus: TableStatus =
       table.status === 'Available' ? 'Occupied' : 'Available';
     const nextBackendStatus =
@@ -400,8 +416,11 @@ export class TableManagement implements OnInit {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
+    const restaurantId =
+      table.restaurantId ?? this.getActiveRestaurantId() ?? 1;
+
     const payload = {
-      restaurantId: table.restaurantId ?? 1,
+      restaurantId,
       tableNumber: table.tableNumber,
       capacity: table.capacity,
       status: nextBackendStatus,
@@ -438,8 +457,12 @@ export class TableManagement implements OnInit {
           } else if (error?.status === 403) {
             this.errorMessage =
               'Access denied. Staff or Admin privileges are required.';
+          } else if (typeof error?.error?.message === 'string') {
+            this.errorMessage = error.error.message;
+          } else if (typeof error?.error === 'string' && error.error.length < 200) {
+            this.errorMessage = error.error;
           } else {
-            this.errorMessage = `Failed to update status for table ${table.tableNumber}. Check backend connection.`;
+            this.errorMessage = `Failed to update status for table ${table.tableNumber} via PUT /api/staff/tables/${table.id}. Check backend connection.`;
           }
           this.updatingTableId = null;
           this.cdr.markForCheck();
@@ -467,9 +490,9 @@ export class TableManagement implements OnInit {
 
     return {
       id: t.id,
-      restaurantId: t.restaurantId ?? 1,
+      restaurantId: t.restaurantId ? Number(t.restaurantId) : (this.getActiveRestaurantId() ?? undefined),
       tableNumber: t.tableNumber || `T-${t.id}`,
-      capacity: t.capacity || 2,
+      capacity: Number(t.capacity) || 2,
       status,
       active: t.active ?? (status === 'Available'),
     };

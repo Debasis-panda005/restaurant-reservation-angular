@@ -3,6 +3,7 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, finalize } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 
 export interface DashboardStats {
   totalReservations: number;
@@ -40,6 +41,7 @@ export interface BackendQueueItem {
 export class StaffDashboard implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly authService = inject(AuthService, { optional: true });
   private readonly cdr = inject(ChangeDetectorRef);
 
   isLoading = true;
@@ -50,6 +52,18 @@ export class StaffDashboard implements OnInit {
   currentQueue = 0;
   availableTables = 0;
 
+  getActiveRestaurantId(): number | null {
+    const fromQuery = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (fromQuery && !isNaN(Number(fromQuery)) && Number(fromQuery) > 0) {
+      return Number(fromQuery);
+    }
+    const fromUser = this.authService?.currentUser()?.restaurantId;
+    if (fromUser && !isNaN(Number(fromUser)) && Number(fromUser) > 0) {
+      return Number(fromUser);
+    }
+    return null;
+  }
+
   ngOnInit(): void {
     this.fetchDashboardStats();
   }
@@ -59,7 +73,7 @@ export class StaffDashboard implements OnInit {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    const restaurantId = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    const restaurantId = this.getActiveRestaurantId();
     const reservationsUrl = restaurantId
       ? `/api/staff/reservations/restaurant/${restaurantId}`
       : '/api/staff/reservations';

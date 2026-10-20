@@ -8,6 +8,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 import {
   ReservationItem,
   ReservationStatus,
@@ -26,6 +27,7 @@ export class ReservationDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService, { optional: true });
   private readonly cdr = inject(ChangeDetectorRef);
 
   reservation: ReservationItem | null = null;
@@ -56,6 +58,18 @@ export class ReservationDetail implements OnInit {
       validators: [Validators.required],
     }),
   });
+
+  getActiveRestaurantId(): number | null {
+    const fromQuery = this.route?.snapshot?.queryParamMap?.get('restaurantId');
+    if (fromQuery && !isNaN(Number(fromQuery)) && Number(fromQuery) > 0) {
+      return Number(fromQuery);
+    }
+    const fromUser = this.authService?.currentUser()?.restaurantId;
+    if (fromUser && !isNaN(Number(fromUser)) && Number(fromUser) > 0) {
+      return Number(fromUser);
+    }
+    return null;
+  }
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -133,8 +147,13 @@ export class ReservationDetail implements OnInit {
     }
 
     this.editReservationForm.setValue({
-      restaurantId: this.rawReservation?.restaurantId ?? 1,
-      customerId: this.rawReservation?.customerId ? Number(this.rawReservation.customerId) : 1,
+      restaurantId:
+        this.rawReservation?.restaurantId ??
+        this.getActiveRestaurantId() ??
+        null,
+      customerId: this.rawReservation?.customerId
+        ? Number(this.rawReservation.customerId)
+        : null,
       numberOfGuests:
         this.rawReservation?.numberOfGuests ??
         this.rawReservation?.guests ??
@@ -318,7 +337,10 @@ export class ReservationDetail implements OnInit {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    const restaurantId = this.rawReservation?.restaurantId ?? 1;
+    const restaurantId =
+      this.rawReservation?.restaurantId ??
+      this.getActiveRestaurantId() ??
+      1;
     const customerId = this.rawReservation?.customerId
       ? Number(this.rawReservation.customerId)
       : 1;
