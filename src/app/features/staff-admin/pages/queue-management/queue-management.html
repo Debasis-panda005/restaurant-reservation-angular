@@ -281,16 +281,6 @@
                     >
                       Call
                     </button>
-
-                    <button
-                      type="button"
-                      class="btn btn-cancel"
-                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
-                      (click)="cancelQueue(item)"
-                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
-                    >
-                      Cancel
-                    </button>
                   } @else if (item.status === 'Called') {
                     <button
                       type="button"
@@ -301,16 +291,6 @@
                     >
                       Assign Table
                     </button>
-
-                    <button
-                      type="button"
-                      class="btn btn-cancel"
-                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
-                      (click)="cancelQueue(item)"
-                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
-                    >
-                      Cancel
-                    </button>
                   } @else if (item.status === 'Table Ready') {
                     <button
                       type="button"
@@ -319,17 +299,7 @@
                       (click)="seatCustomer(item)"
                       [attr.aria-label]="'Seat customer ' + item.customerName"
                     >
-                      Seat
-                    </button>
-
-                    <button
-                      type="button"
-                      class="btn btn-cancel"
-                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
-                      (click)="cancelQueue(item)"
-                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
-                    >
-                      Cancel
+                      Seat Customer
                     </button>
                   } @else if (item.status === 'Seated') {
                     <button
@@ -340,6 +310,24 @@
                       [attr.aria-label]="'Complete queue ticket ' + item.queueNo"
                     >
                       Complete
+                    </button>
+                  } @else if (item.status === 'Completed') {
+                    <span class="status-badge status-completed">Completed</span>
+                  }
+
+                  @if (
+                    item.status === 'Waiting' ||
+                    item.status === 'Called' ||
+                    item.status === 'Table Ready'
+                  ) {
+                    <button
+                      type="button"
+                      class="btn btn-cancel"
+                      [disabled]="isUpdatingId === item.id || isDeletingId === item.id"
+                      (click)="cancelQueue(item)"
+                      [attr.aria-label]="'Cancel queue ticket ' + item.queueNo"
+                    >
+                      Cancel
                     </button>
                   }
 
@@ -379,5 +367,101 @@
       </tbody>
     </table>
   </div>
+
+  @if (assigningQueueItem) {
+    <div
+      class="assign-modal-backdrop"
+      style="position:fixed;inset:0;background:#000000a6;display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;box-sizing:border-box"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assignModalTitle"
+    >
+      <div
+        class="add-queue-card assign-modal-card"
+        style="width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-sizing:border-box"
+      >
+        <div class="add-queue-header">
+          <div class="queue-header">
+            <div>
+              <h2 id="assignModalTitle" class="add-queue-title">Assign Table</h2>
+              <p class="add-queue-subtitle">
+                Select an available table for {{ assigningQueueItem.customerName }} ({{ assigningQueueItem.queueNo }} &bull; {{ assigningQueueItem.guests }} {{ assigningQueueItem.guests === 1 ? 'guest' : 'guests' }}).
+              </p>
+            </div>
+            <button
+              type="button"
+              class="alert-dismiss-btn"
+              (click)="closeAssignTableModal()"
+              [disabled]="isAssigningTable"
+              aria-label="Close dialog"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        @if (assignTableErrorMessage) {
+          <div class="form-alert" role="alert">
+            <span>{{ assignTableErrorMessage }}</span>
+            <button
+              type="button"
+              class="alert-dismiss-btn"
+              (click)="assignTableErrorMessage = ''"
+              aria-label="Dismiss alert"
+            >
+              ✕
+            </button>
+          </div>
+        }
+
+        @if (currentEligibleTables.length === 0) {
+          <div class="form-alert" role="status">
+            <span>No available tables currently fit {{ assigningQueueItem.guests }} {{ assigningQueueItem.guests === 1 ? 'guest' : 'guests' }}.</span>
+          </div>
+        } @else {
+          <div class="form-grid" role="radiogroup" aria-label="Available tables">
+            @for (tbl of currentEligibleTables; track tbl.id) {
+              <button
+                type="button"
+                class="form-input"
+                [style.height]="'auto'"
+                [style.display]="'flex'"
+                [style.flex-direction]="'column'"
+                [style.align-items]="'center'"
+                [style.gap]="'.25rem'"
+                [style.border-color]="selectedTableId === tbl.id ? '#f59e0b' : '#b45309'"
+                [style.background]="selectedTableId === tbl.id ? '#78350f' : '#070a10'"
+                (click)="selectedTableId = tbl.id"
+                role="radio"
+                [attr.aria-checked]="selectedTableId === tbl.id"
+              >
+                <span class="table-badge">{{ tbl.tableNumber }}</span>
+                <span>Capacity: {{ tbl.capacity }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn-submit-queue"
+            (click)="confirmTableAssignment()"
+            [disabled]="isAssigningTable || !selectedTableId || currentEligibleTables.length === 0"
+          >
+            {{ isAssigningTable ? 'Assigning...' : 'Confirm Assignment' }}
+          </button>
+          <button
+            type="button"
+            class="btn-cancel-queue"
+            (click)="closeAssignTableModal()"
+            [disabled]="isAssigningTable"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
 </div>

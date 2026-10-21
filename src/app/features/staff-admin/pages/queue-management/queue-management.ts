@@ -84,6 +84,11 @@ export class QueueManagement implements OnInit {
   itemPendingDelete: QueueItem | null = null;
   isDeletingId: number | string | null = null;
 
+  assigningQueueItem: QueueItem | null = null;
+  selectedTableId: number | null = null;
+  isAssigningTable = false;
+  assignTableErrorMessage = '';
+
   addQueueForm = new FormGroup({
     restaurantId: new FormControl<number | null>(null, {
       validators: [Validators.required, Validators.min(1)],
@@ -213,6 +218,12 @@ export class QueueManagement implements OnInit {
   toggleAddForm(): void {
     this.isAddFormVisible = !this.isAddFormVisible;
     this.addFormErrorMessage = '';
+    if (this.isAddFormVisible && !this.addQueueForm.value.restaurantId) {
+      const activeRestId = this.getActiveRestaurantId();
+      if (activeRestId) {
+        this.addQueueForm.patchValue({ restaurantId: activeRestId });
+      }
+    }
     this.cdr.markForCheck();
   }
 
@@ -395,112 +406,164 @@ export class QueueManagement implements OnInit {
       });
   }
 
-  assignTable(item: QueueItem): void {
-    if (this.isUpdatingId === item.id) {
+  openAssignTableModal(item: QueueItem): void {
+    if (this.isUpdatingId === item.id || this.isDeletingId === item.id) {
       return;
     }
-    // Enforce valid transition: CALLED or TABLE_READY -> SEATED
-    if (item.status !== 'Called' && item.status !== 'Table Ready') {
+    // Only WAITING or CALLED customers can be assigned a table
+    if (item.status !== 'Waiting' && item.status !== 'Called') {
       return;
     }
 
-    this.alertMessage = null;
-
-    const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
-
-    let suitableTable: RestaurantTable | undefined;
-    if (item.assignedTableId) {
-      suitableTable = this.findTable(Number(item.assignedTableId), itemRestId);
-    }
-
-    if (!suitableTable) {
-      const candidates = this.getCandidateTables(itemRestId);
-      suitableTable = candidates
-        .filter((t) => {
-          const isAvail = this.normalizeTableStatus(t.status) === 'Available';
-          const fitsCapacity = Number(t.capacity) >= Number(item.guests);
-          return isAvail && fitsCapacity;
-        })
-        .sort((a, b) => Number(a.capacity) - Number(b.capacity))[0];
-    }
-
-    // Ensure a table is assigned before attempting transition
-    if (!suitableTable || !suitableTable.id) {
+    this.assigningQueueItem = item;
+    this.assignTableErrorMessage = '';
+    const eligible = this.getEligibleTables(item);
+    if (eligible.length === 0) {
       this.alertMessage = `No available table found with capacity for ${item.guests} guests (${item.customerName} remains in ${item.status} status).`;
+    }
+    this.selectedTableId = eligible.length > 0 ? eligible[0].id : null;
+    this.cdr.markForCheck();
+  }
+
+  closeAssignTableModal(): void {
+    this.assigningQueueItem = null;
+    this.selectedTableId = null;
+    this.assignTableErrorMessage = '';
+    this.isAssigningTable = false;
+    this.cdr.markForCheck();
+  }
+
+  get currentEligibleTables(): RestaurantTable[] {
+    return this.getEligibleTables(this.assigningQueueItem);
+  }
+
+  getEligibleTables(item: QueueItem | null): RestaurantTable[] {
+    if (!item) return [];
+    const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
+    return this.getCandidateTables(itemRestId)
+      .filter((t) => {
+        const isAvail = this.normalizeTableStatus(t.status) === 'Available';
+        const fitsCapacity = Number(t.capacity) >= Number(item.guests);
+        return isAvail && fitsCapacity;
+      })
+      .sort((a, b) => Number(a.capacity) - Number(b.capacity));
+  }
+
+  confirmTableAssignment(tableToAssign?: RestaurantTable): void {
+    if (!this.assigningQueueItem || this.isAssigningTable) {
+      return;
+    }
+
+    const item = this.assigningQueueItem;
+    const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
+    const targetTableId = tableToAssign?.id ?? this.selectedTableId;
+
+    if (!targetTableId) {
+      this.assignTableErrorMessage = 'Please select an available table.';
       this.cdr.markForCheck();
       return;
     }
 
+    const targetTable =
+      tableToAssign ??
+      this.getEligibleTables(item).find((t) => t.id === targetTableId) ??
+      this.findTable(targetTableId, itemRestId);
+
+    if (!targetTable) {
+      this.assignTableErrorMessage = 'Selected table is not eligible or available.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.isAssigningTable = true;
     this.isUpdatingId = item.id;
+    this.assignTableErrorMessage = '';
     this.cdr.markForCheck();
 
-    const currentRestaurantId =
-      suitableTable.restaurantId ??
-      itemRestId ??
-      1;
-
-    const tablePayload = {
-      restaurantId: currentRestaurantId,
-      tableNumber: suitableTable.tableNumber,
-      capacity: suitableTable.capacity,
-      status: 'OCCUPIED',
-    };
-
-    // Chain PUT queue status to SEATED and PUT table status to OCCUPIED
     this.http
       .put<BackendQueueItem>(
-        `/api/staff/queue/${item.id}/status?status=SEATED`,
+        `/api/staff/queue/${item.id}/assign-table/${targetTable.id}`,
         {}
       )
       .pipe(
-        switchMap(() =>
-          this.http.put<RestaurantTable>(
-            `/api/staff/tables/${suitableTable.id}`,
-            tablePayload
-          )
-        ),
         finalize(() => {
+          this.isAssigningTable = false;
           this.isUpdatingId = null;
           this.cdr.markForCheck();
         })
       )
       .subscribe({
         next: () => {
-          item.status = 'Seated';
-          item.assignedTable = suitableTable.tableNumber;
-          item.assignedTableId = suitableTable.id;
-          suitableTable.status = 'Occupied';
+          item.status = 'Table Ready';
+          item.assignedTableId = targetTable.id;
+          item.assignedTable = targetTable.tableNumber;
+          targetTable.status = 'Reserved';
 
           const sharedMatch = SHARED_TABLES.find(
             (t) =>
-              t.id === suitableTable.id &&
-              (!suitableTable.restaurantId ||
-                Number(t.restaurantId) === Number(suitableTable.restaurantId))
+              t.id === targetTable.id &&
+              (!targetTable.restaurantId ||
+                Number(t.restaurantId) === Number(targetTable.restaurantId))
           );
           if (sharedMatch) {
-            sharedMatch.status = 'Occupied';
+            sharedMatch.status = 'Reserved';
           }
 
+          this.closeAssignTableModal();
           this.recalculatePositions();
-          this.isUpdatingId = null;
           this.cdr.markForCheck();
           this.loadData();
         },
         error: (error: HttpErrorResponse | any) => {
-          console.error(`Failed to seat queue entry ${item.id}:`, error);
+          console.error(
+            `Failed to assign table ${targetTable.id} to queue entry ${item.id}:`,
+            error
+          );
+          let msg = '';
           if (error?.status === 401) {
-            this.alertMessage = 'Authentication required. Please log in again.';
+            msg = 'Authentication required. Please log in again.';
           } else if (error?.status === 403) {
-            this.alertMessage =
-              'Access denied. Staff or Admin privileges are required.';
+            msg = 'Access denied. Staff or Admin privileges are required.';
+          } else if (error?.status === 404) {
+            msg =
+              typeof error?.error?.message === 'string'
+                ? error.error.message
+                : 'Queue entry or table not found.';
+          } else if (error?.status === 409) {
+            msg =
+              typeof error?.error?.message === 'string'
+                ? error.error.message
+                : 'Table is not available or customer is not in valid status.';
+          } else if (error?.status === 400) {
+            msg =
+              typeof error?.error?.message === 'string'
+                ? error.error.message
+                : 'Table capacity is too small or belongs to a different restaurant.';
+          } else if (error?.status === 0) {
+            msg = 'Unable to connect to backend server. Check backend connection.';
+          } else if (typeof error?.error?.message === 'string') {
+            msg = error.error.message;
+          } else if (typeof error?.error === 'string' && error.error.length < 200) {
+            msg = error.error;
           } else {
-            this.alertMessage = `Failed to seat customer ${item.customerName}. Check backend connection.`;
+            msg = `Failed to assign table to customer ${item.customerName}.`;
           }
-          this.isUpdatingId = null;
+
+          this.assignTableErrorMessage = msg;
+          this.alertMessage = msg;
+          this.isAssigningTable = false;
           this.cdr.markForCheck();
-          this.loadData(true);
         },
       });
+  }
+
+  assignTable(item: QueueItem, directTable?: RestaurantTable): void {
+    if (directTable) {
+      this.assigningQueueItem = item;
+      this.confirmTableAssignment(directTable);
+      return;
+    }
+    this.openAssignTableModal(item);
   }
 
   cancelQueue(item: QueueItem): void {
@@ -605,7 +668,105 @@ export class QueueManagement implements OnInit {
   }
 
   seatCustomer(item: QueueItem): void {
-    this.assignTable(item);
+    if (this.isUpdatingId === item.id) {
+      return;
+    }
+    // Enforce valid transition: TABLE_READY -> SEATED
+    if (item.status !== 'Table Ready') {
+      return;
+    }
+
+    const assignedId = item.assignedTableId ?? item.tableId;
+    if (!assignedId || Number(assignedId) <= 0) {
+      this.alertMessage = 'Assign a table before seating the customer.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.alertMessage = null;
+    this.isUpdatingId = item.id;
+    this.cdr.markForCheck();
+
+    const itemRestId = item.restaurantId ?? this.getActiveRestaurantId();
+    const suitableTable = this.findTable(Number(assignedId), itemRestId);
+
+    const currentRestaurantId =
+      suitableTable?.restaurantId ??
+      itemRestId ??
+      1;
+
+    const tablePayload = {
+      restaurantId: currentRestaurantId,
+      tableNumber: suitableTable?.tableNumber || item.assignedTable || `T-${assignedId}`,
+      capacity: suitableTable?.capacity || item.guests,
+      status: 'OCCUPIED',
+    };
+
+    // Chain PUT queue status to SEATED and PUT table status to OCCUPIED
+    this.http
+      .put<BackendQueueItem>(
+        `/api/staff/queue/${item.id}/status?status=SEATED`,
+        {}
+      )
+      .pipe(
+        switchMap(() =>
+          this.http.put<RestaurantTable>(
+            `/api/staff/tables/${assignedId}`,
+            tablePayload
+          )
+        ),
+        finalize(() => {
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          item.status = 'Seated';
+          if (suitableTable) {
+            suitableTable.status = 'Occupied';
+          }
+
+          const sharedMatch = SHARED_TABLES.find(
+            (t) =>
+              t.id === Number(assignedId) &&
+              (!currentRestaurantId ||
+                Number(t.restaurantId) === Number(currentRestaurantId))
+          );
+          if (sharedMatch) {
+            sharedMatch.status = 'Occupied';
+          }
+
+          this.recalculatePositions();
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+          this.loadData();
+        },
+        error: (error: HttpErrorResponse | any) => {
+          console.error(`Failed to seat queue entry ${item.id}:`, error);
+          let msg = '';
+          if (error?.status === 401) {
+            msg = 'Authentication required. Please log in again.';
+          } else if (error?.status === 403) {
+            msg = 'Access denied. Staff or Admin privileges are required.';
+          } else if (error?.status === 409) {
+            msg =
+              typeof error?.error?.message === 'string'
+                ? error.error.message
+                : 'Customer must have a table ready before seating.';
+          } else if (error?.status === 0) {
+            msg = 'Unable to connect to backend server. Check backend connection.';
+          } else if (typeof error?.error?.message === 'string') {
+            msg = error.error.message;
+          } else {
+            msg = `Failed to seat customer ${item.customerName}.`;
+          }
+          this.alertMessage = msg;
+          this.isUpdatingId = null;
+          this.cdr.markForCheck();
+          this.loadData(true);
+        },
+      });
   }
 
   private recalculatePositions(): void {
