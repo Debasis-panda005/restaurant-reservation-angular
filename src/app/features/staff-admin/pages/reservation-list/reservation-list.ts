@@ -6,9 +6,10 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { RestaurantTable } from '../table-management/table-management';
 
 export type ReservationStatus =
   | 'Pending'
@@ -70,6 +71,11 @@ export class ReservationList implements OnInit {
   isSubmitting = false;
   createFormErrorMessage = '';
 
+  tableControl = new FormControl<number | null>(null);
+  availableTables: RestaurantTable[] = [];
+  isLoadingAvailableTables = false;
+  hasCheckedTables = false;
+
   createReservationForm = new FormGroup({
     restaurantId: new FormControl<number | null>(null, {
       validators: [Validators.required, Validators.min(1)],
@@ -106,15 +112,70 @@ export class ReservationList implements OnInit {
     this.fetchReservations();
   }
 
+  fetchAvailableTables(): void {
+    const restId = this.createReservationForm.controls.restaurantId.value;
+    const guests = this.createReservationForm.controls.numberOfGuests.value;
+    let dt = this.createReservationForm.controls.reservationDateTime.value?.trim();
+
+    if (!restId || Number(restId) < 1 || !guests || Number(guests) < 1 || !dt) {
+      this.availableTables = [];
+      this.hasCheckedTables = false;
+      return;
+    }
+
+    if (dt.length === 16) {
+      dt = `${dt}:00`;
+    }
+
+    this.isLoadingAvailableTables = true;
+    this.hasCheckedTables = true;
+    this.cdr.markForCheck();
+
+    const params = new HttpParams()
+      .set('restaurantId', String(restId))
+      .set('guests', String(guests))
+      .set('reservationDateTime', dt);
+
+    this.http
+      .get<RestaurantTable[]>('/api/staff/reservations/available-tables', { params })
+      .pipe(
+        finalize(() => {
+          this.isLoadingAvailableTables = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (tables) => {
+          this.availableTables = Array.isArray(tables) ? tables : [];
+          const cur = this.tableControl.value;
+          if (cur && !this.availableTables.some((t) => t.id === cur)) {
+            this.tableControl.setValue(null);
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.warn('Failed to load available tables:', err);
+          this.availableTables = [];
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
   toggleCreateForm(): void {
     this.isCreateFormVisible = !this.isCreateFormVisible;
     this.createFormErrorMessage = '';
+    if (this.isCreateFormVisible) {
+      this.fetchAvailableTables();
+    }
     this.cdr.markForCheck();
   }
 
   cancelCreateForm(): void {
     this.isCreateFormVisible = false;
     this.createFormErrorMessage = '';
+    this.tableControl.reset(null);
+    this.availableTables = [];
+    this.hasCheckedTables = false;
     this.cdr.markForCheck();
   }
 
@@ -135,12 +196,16 @@ export class ReservationList implements OnInit {
       dt = `${dt}:00`;
     }
 
-    const payload = {
+    const payload: any = {
       restaurantId: Number(raw.restaurantId),
       customerId: Number(raw.customerId),
       numberOfGuests: Number(raw.numberOfGuests),
       reservationDateTime: dt,
     };
+
+    if (this.tableControl.value && Number(this.tableControl.value) > 0) {
+      payload.tableId = Number(this.tableControl.value);
+    }
 
     this.http
       .post<BackendReservation>('/api/staff/reservations', payload)
@@ -161,6 +226,9 @@ export class ReservationList implements OnInit {
             numberOfGuests: null,
             reservationDateTime: '',
           });
+          this.tableControl.reset(null);
+          this.availableTables = [];
+          this.hasCheckedTables = false;
           this.isCreateFormVisible = false;
           this.createFormErrorMessage = '';
           this.cdr.markForCheck();

@@ -307,4 +307,71 @@ describe('ReservationList', () => {
     expect(component.createReservationForm.value.restaurantId).toBe(1);
     expect(component.createReservationForm.value.numberOfGuests).toBe(4);
   });
+
+  it('should query /api/staff/reservations/available-tables on fetchAvailableTables() when form fields are set', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/reservations').flush([]);
+
+    component.createReservationForm.patchValue({
+      restaurantId: 2,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-30T19:00',
+    });
+
+    component.fetchAvailableTables();
+    expect(component.isLoadingAvailableTables).toBe(true);
+
+    const tablesReq = httpMock.expectOne(
+      '/api/staff/reservations/available-tables?restaurantId=2&guests=4&reservationDateTime=2026-10-30T19:00:00'
+    );
+    expect(tablesReq.request.method).toBe('GET');
+    tablesReq.flush([
+      { id: 9, tableNumber: 'T-09', capacity: 4, status: 'Available' },
+    ]);
+
+    expect(component.isLoadingAvailableTables).toBe(false);
+    expect(component.availableTables.length).toBe(1);
+    expect(component.availableTables[0].tableNumber).toBe('T-09');
+  });
+
+  it('should include selected tableId in POST /api/staff/reservations when table is chosen', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/reservations').flush([]);
+
+    component.toggleCreateForm();
+    component.createReservationForm.patchValue({
+      restaurantId: 2,
+      customerId: 303,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-30T19:00',
+    });
+    component.tableControl.setValue(9);
+
+    component.onCreateReservationSubmit();
+    expect(component.isSubmitting).toBe(true);
+
+    const postReq = httpMock.expectOne('/api/staff/reservations');
+    expect(postReq.request.method).toBe('POST');
+    expect(postReq.request.body).toEqual({
+      restaurantId: 2,
+      customerId: 303,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-30T19:00:00',
+      tableId: 9,
+    });
+    postReq.flush({
+      id: 2001,
+      restaurantId: 2,
+      customerId: 303,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-30T19:00:00',
+      tableId: 9,
+      tableNumber: 'T-09',
+      status: 'PENDING',
+    });
+
+    httpMock.expectOne('/api/staff/reservations').flush([]);
+    expect(component.isSubmitting).toBe(false);
+    expect(component.tableControl.value).toBeNull();
+  });
 });

@@ -67,6 +67,8 @@
               "
               placeholder="e.g. 1"
               min="1"
+              (change)="fetchAvailableTables()"
+              (input)="fetchAvailableTables()"
             />
             @if (
               createReservationForm.controls.restaurantId.invalid &&
@@ -119,6 +121,8 @@
               "
               placeholder="e.g. 4"
               min="1"
+              (change)="fetchAvailableTables()"
+              (input)="fetchAvailableTables()"
             />
             @if (
               createReservationForm.controls.numberOfGuests.invalid &&
@@ -143,12 +147,35 @@
                 createReservationForm.controls.reservationDateTime.invalid &&
                 (createReservationForm.controls.reservationDateTime.touched || createReservationForm.controls.reservationDateTime.dirty)
               "
+              (change)="fetchAvailableTables()"
+              (input)="fetchAvailableTables()"
             />
             @if (
               createReservationForm.controls.reservationDateTime.invalid &&
               (createReservationForm.controls.reservationDateTime.touched || createReservationForm.controls.reservationDateTime.dirty)
             ) {
               <span class="error-text">Reservation date and time are required.</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="createTableId" class="form-label">Assign Table (Optional)</label>
+            <select
+              id="createTableId"
+              [formControl]="tableControl"
+              class="form-input"
+            >
+              <option [ngValue]="null">-- Select an available table --</option>
+              @for (tbl of availableTables; track tbl.id) {
+                <option [ngValue]="tbl.id">
+                  {{ tbl.tableNumber }} (Seats {{ tbl.capacity }})
+                </option>
+              }
+            </select>
+            @if (isLoadingAvailableTables) {
+              <span class="error-text" style="color: #94a3b8;">Checking available tables...</span>
+            } @else if (availableTables.length === 0 && hasCheckedTables) {
+              <span class="error-text" style="color: #fbbf24;">No tables available for this slot.</span>
             }
           </div>
         </div>

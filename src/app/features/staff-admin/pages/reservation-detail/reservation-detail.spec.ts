@@ -433,4 +433,62 @@ describe('ReservationDetail', () => {
     expect(component.errorMessage).toContain('Failed to delete reservation #1001');
     expect(navigateSpy).not.toHaveBeenCalled();
   });
+
+  it('should query /api/staff/reservations/available-tables on fetchAvailableTables() with excludeReservationId', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/reservations/1001').flush(mockPendingReservation);
+
+    component.startEdit();
+    component.fetchAvailableTables();
+    expect(component.isLoadingAvailableTables).toBe(true);
+
+    const tablesReq = httpMock.expectOne(
+      '/api/staff/reservations/available-tables?restaurantId=1&guests=4&reservationDateTime=2026-10-01T18:30:00&excludeReservationId=1001'
+    );
+    expect(tablesReq.request.method).toBe('GET');
+    tablesReq.flush([
+      { id: 4, tableNumber: 'T-04', capacity: 4, status: 'Available' },
+    ]);
+
+    expect(component.isLoadingAvailableTables).toBe(false);
+    expect(component.availableTables.length).toBe(1);
+    expect(component.availableTables[0].tableNumber).toBe('T-04');
+  });
+
+  it('should include selected tableId in PUT /api/staff/reservations/:id when table is changed during edit', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/staff/reservations/1001').flush(mockPendingReservation);
+
+    component.startEdit();
+    component.editReservationForm.setValue({
+      restaurantId: 1,
+      customerId: 101,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-01T18:30',
+    });
+    component.editTableControl.setValue(4);
+
+    component.onEditReservationSubmit();
+    expect(component.isEditSubmitting).toBe(true);
+
+    const putReq = httpMock.expectOne('/api/staff/reservations/1001');
+    expect(putReq.request.method).toBe('PUT');
+    expect(putReq.request.body).toEqual({
+      restaurantId: 1,
+      customerId: 101,
+      numberOfGuests: 4,
+      reservationDateTime: '2026-10-01T18:30:00',
+      status: 'PENDING',
+      tableId: 4,
+    });
+    putReq.flush({
+      ...mockPendingReservation,
+      tableId: 4,
+      tableNumber: 'T-04',
+    });
+
+    expect(component.isEditSubmitting).toBe(false);
+    expect(component.isEditing).toBe(false);
+    expect(component.reservation?.tableNumber).toBe('T-04');
+  });
 });

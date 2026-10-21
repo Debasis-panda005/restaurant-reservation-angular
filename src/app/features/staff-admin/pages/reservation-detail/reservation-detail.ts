@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import {
@@ -14,6 +14,7 @@ import {
   ReservationStatus,
   BackendReservation,
 } from '../reservation-list/reservation-list';
+import { RestaurantTable } from '../table-management/table-management';
 
 export type { ReservationStatus, ReservationItem as ReservationDetailData };
 
@@ -39,6 +40,11 @@ export class ReservationDetail implements OnInit {
   isEditing = false;
   isEditSubmitting = false;
   editFormErrorMessage = '';
+
+  editTableControl = new FormControl<number | null>(null);
+  availableTables: RestaurantTable[] = [];
+  isLoadingAvailableTables = false;
+  hasCheckedTables = false;
 
   isDeletePromptVisible = false;
   isDeleting = false;
@@ -146,6 +152,11 @@ export class ReservationDetail implements OnInit {
       dt = `${this.reservation.date}T${this.reservation.time.substring(0, 5)}`;
     }
 
+    const currentTableId = this.rawReservation?.tableId
+      ? Number(this.rawReservation.tableId)
+      : null;
+    this.editTableControl.setValue(currentTableId);
+
     this.editReservationForm.setValue({
       restaurantId:
         this.rawReservation?.restaurantId ??
@@ -164,9 +175,74 @@ export class ReservationDetail implements OnInit {
     this.cdr.markForCheck();
   }
 
+  fetchAvailableTables(): void {
+    const restId = this.editReservationForm.controls.restaurantId.value;
+    const guests = this.editReservationForm.controls.numberOfGuests.value;
+    let dt = this.editReservationForm.controls.reservationDateTime.value?.trim();
+
+    if (!restId || Number(restId) < 1 || !guests || Number(guests) < 1 || !dt) {
+      this.availableTables = [];
+      this.hasCheckedTables = false;
+      return;
+    }
+
+    if (dt.length === 16) {
+      dt = `${dt}:00`;
+    }
+
+    this.isLoadingAvailableTables = true;
+    this.hasCheckedTables = true;
+    this.cdr.markForCheck();
+
+    let params = new HttpParams()
+      .set('restaurantId', String(restId))
+      .set('guests', String(guests))
+      .set('reservationDateTime', dt);
+
+    if (this.reservation?.id) {
+      params = params.set('excludeReservationId', this.reservation.id);
+    }
+
+    this.http
+      .get<RestaurantTable[]>('/api/staff/reservations/available-tables', { params })
+      .pipe(
+        finalize(() => {
+          this.isLoadingAvailableTables = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (tables) => {
+          this.availableTables = Array.isArray(tables) ? tables : [];
+          const cur = this.editTableControl.value;
+          if (cur && !this.availableTables.some((t) => t.id === cur)) {
+            const currentTableNumber =
+              this.rawReservation?.tableNumber ||
+              this.reservation?.tableNumber ||
+              `T-${cur}`;
+            this.availableTables.unshift({
+              id: cur,
+              restaurantId: Number(restId),
+              tableNumber: currentTableNumber,
+              capacity: Number(guests),
+              status: 'Reserved',
+            });
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.warn('Failed to load available tables for edit:', err);
+          this.availableTables = [];
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
   cancelEdit(): void {
     this.isEditing = false;
     this.editFormErrorMessage = '';
+    this.availableTables = [];
+    this.hasCheckedTables = false;
     this.cdr.markForCheck();
   }
 
@@ -193,13 +269,19 @@ export class ReservationDetail implements OnInit {
       this.rawReservation?.status ||
       this.reservation.status.toUpperCase();
 
-    const payload = {
+    const payload: any = {
       restaurantId: Number(raw.restaurantId),
       customerId: Number(raw.customerId),
       numberOfGuests: Number(raw.numberOfGuests),
       reservationDateTime: dt,
       status: currentStatus,
     };
+
+    if (this.editTableControl.value !== null && this.editTableControl.value !== undefined) {
+      payload.tableId = Number(this.editTableControl.value);
+    } else if (this.rawReservation?.tableId) {
+      payload.tableId = 0;
+    }
 
     const id = this.reservation.id;
 
@@ -361,13 +443,16 @@ export class ReservationDetail implements OnInit {
       reservationDateTime = `${d}T${t}`;
     }
 
-    const payload = {
+    const payload: any = {
       restaurantId,
       customerId,
       numberOfGuests,
       reservationDateTime,
       status: backendStatus,
     };
+    if (this.rawReservation?.tableId) {
+      payload.tableId = Number(this.rawReservation.tableId);
+    }
 
     this.http
       .put<BackendReservation>(

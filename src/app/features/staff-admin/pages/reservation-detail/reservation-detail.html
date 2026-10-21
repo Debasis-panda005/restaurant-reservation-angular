@@ -49,7 +49,7 @@
           <button
             type="button"
             class="btn-header-action btn-edit"
-            (click)="startEdit()"
+            (click)="startEdit(); fetchAvailableTables()"
             [disabled]="isEditing || isDeleting"
             [attr.aria-label]="'Edit reservation #' + reservation.id"
           >
@@ -142,6 +142,8 @@
                 "
                 placeholder="e.g. 1"
                 min="1"
+                (change)="fetchAvailableTables()"
+                (input)="fetchAvailableTables()"
               />
               @if (
                 editReservationForm.controls.restaurantId.invalid &&
@@ -194,6 +196,8 @@
                 "
                 placeholder="e.g. 4"
                 min="1"
+                (change)="fetchAvailableTables()"
+                (input)="fetchAvailableTables()"
               />
               @if (
                 editReservationForm.controls.numberOfGuests.invalid &&
@@ -218,12 +222,35 @@
                   editReservationForm.controls.reservationDateTime.invalid &&
                   (editReservationForm.controls.reservationDateTime.touched || editReservationForm.controls.reservationDateTime.dirty)
                 "
+                (change)="fetchAvailableTables()"
+                (input)="fetchAvailableTables()"
               />
               @if (
                 editReservationForm.controls.reservationDateTime.invalid &&
                 (editReservationForm.controls.reservationDateTime.touched || editReservationForm.controls.reservationDateTime.dirty)
               ) {
                 <span class="error-text">Reservation date and time are required.</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="editTableId" class="form-label">Assign Table (Optional)</label>
+              <select
+                id="editTableId"
+                [formControl]="editTableControl"
+                class="form-input"
+              >
+                <option [ngValue]="null">-- No table assigned --</option>
+                @for (tbl of availableTables; track tbl.id) {
+                  <option [ngValue]="tbl.id">
+                    {{ tbl.tableNumber }} (Seats {{ tbl.capacity }})
+                  </option>
+                }
+              </select>
+              @if (isLoadingAvailableTables) {
+                <span class="error-text" style="color: #94a3b8;">Checking available tables...</span>
+              } @else if (availableTables.length === 0 && hasCheckedTables) {
+                <span class="error-text" style="color: #fbbf24;">No tables available for this slot.</span>
               }
             </div>
           </div>
