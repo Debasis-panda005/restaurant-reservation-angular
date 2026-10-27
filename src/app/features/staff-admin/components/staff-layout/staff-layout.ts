@@ -14,6 +14,6 @@ export class StaffLayout {
 
   onSignOut(): void {
     this.authService.logout();
-    this.router?.navigate(['/staff/login']);
+    this.router?.navigate(['/login']);
   }
 }

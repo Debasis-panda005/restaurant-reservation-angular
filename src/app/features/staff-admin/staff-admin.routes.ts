@@ -6,14 +6,15 @@ import { roleGuard } from '../../core/guards/role.guard';
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () =>
-      import('./pages/staff-login/staff-login').then((m) => m.StaffLogin),
+    redirectTo: '/login',
+    pathMatch: 'full',
   },
   {
     path: '',
     component: StaffLayout,
     canActivate: [authGuard, roleGuard],
     canActivateChild: [authGuard, roleGuard],
+    data: { roles: ['STAFF', 'ADMIN'] },
     children: [
       {
         path: '',

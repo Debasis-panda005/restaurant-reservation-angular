@@ -8,7 +8,7 @@ import {
 } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { roleGuard, staffRoleGuard } from './role.guard';
+import { roleGuard, staffRoleGuard, customerRoleGuard } from './role.guard';
 import { AuthService } from '../services/auth.service';
 
 describe('roleGuard', () => {
@@ -42,7 +42,7 @@ describe('roleGuard', () => {
     sessionStorage.clear();
   });
 
-  it('should redirect unauthenticated users to /staff/login', () => {
+  it('should redirect unauthenticated users to /login', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
 
     const result = TestBed.runInInjectionContext(() =>
@@ -52,12 +52,11 @@ describe('roleGuard', () => {
     expect(result instanceof UrlTree).toBe(true);
     const tree = result as UrlTree;
     expect(tree.root.children['primary'].segments.map((s) => s.path)).toEqual([
-      'staff',
       'login',
     ]);
   });
 
-  it('should allow access for STAFF role', () => {
+  it('should allow access for STAFF role on default staff routes', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
     vi.spyOn(authService, 'getUserRole').mockReturnValue('STAFF');
 
@@ -68,7 +67,7 @@ describe('roleGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should allow access for ADMIN role', () => {
+  it('should allow access for ADMIN role on default staff routes', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
     vi.spyOn(authService, 'getUserRole').mockReturnValue('ADMIN');
 
@@ -79,7 +78,7 @@ describe('roleGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should strictly bar CUSTOMER role and redirect to /staff/login?reason=customer-denied', () => {
+  it('should strictly bar CUSTOMER role from staff routes and redirect to /login?reason=customer-denied', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
     vi.spyOn(authService, 'getUserRole').mockReturnValue('CUSTOMER');
 
@@ -90,26 +89,57 @@ describe('roleGuard', () => {
     expect(result instanceof UrlTree).toBe(true);
     const tree = result as UrlTree;
     expect(tree.root.children['primary'].segments.map((s) => s.path)).toEqual([
-      'staff',
       'login',
     ]);
     expect(tree.queryParams['reason']).toBe('customer-denied');
   });
 
-  it('should support custom role requirements from route.data', () => {
+  it('should allow access for CUSTOMER role on routes with data roles CUSTOMER', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(authService, 'getUserRole').mockReturnValue('CUSTOMER');
+
+    const customerRouteSnapshot = createRouteSnapshot({ roles: ['CUSTOMER'] });
+
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard(customerRouteSnapshot, createStateSnapshot('/customer/dashboard'))
+    );
+
+    expect(result).toBe(true);
+  });
+
+  it('should safely redirect STAFF to staff dashboard when accessing customer-only routes', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
     vi.spyOn(authService, 'getUserRole').mockReturnValue('STAFF');
 
-    // Route requiring ADMIN only
+    const customerRouteSnapshot = createRouteSnapshot({ roles: ['CUSTOMER'] });
+
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard(customerRouteSnapshot, createStateSnapshot('/customer/dashboard'))
+    );
+
+    expect(result instanceof UrlTree).toBe(true);
+    const tree = result as UrlTree;
+    expect(tree.root.children['primary'].segments.map((s) => s.path)).toEqual([
+      'staff',
+      'dashboard',
+    ]);
+  });
+
+  it('should support custom role requirements from route.data (e.g. ADMIN only)', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(authService, 'getUserRole').mockReturnValue('STAFF');
+
     const adminOnlySnapshot = createRouteSnapshot({ roles: ['ADMIN'] });
 
     const staffResult = TestBed.runInInjectionContext(() =>
       roleGuard(adminOnlySnapshot, createStateSnapshot('/staff/admin-settings'))
     );
     expect(staffResult instanceof UrlTree).toBe(true);
-    expect((staffResult as UrlTree).queryParams['reason']).toBe('customer-denied');
+    expect((staffResult as UrlTree).root.children['primary'].segments.map((s) => s.path)).toEqual([
+      'staff',
+      'dashboard',
+    ]);
 
-    // With ADMIN role
     vi.spyOn(authService, 'getUserRole').mockReturnValue('ADMIN');
     const adminResult = TestBed.runInInjectionContext(() =>
       roleGuard(adminOnlySnapshot, createStateSnapshot('/staff/admin-settings'))
@@ -117,14 +147,19 @@ describe('roleGuard', () => {
     expect(adminResult).toBe(true);
   });
 
-  it('staffRoleGuard alias should function identically to roleGuard', () => {
+  it('staffRoleGuard and customerRoleGuard aliases should function properly', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
     vi.spyOn(authService, 'getUserRole').mockReturnValue('STAFF');
 
-    const result = TestBed.runInInjectionContext(() =>
+    const staffResult = TestBed.runInInjectionContext(() =>
       staffRoleGuard(createRouteSnapshot(), createStateSnapshot('/staff/tables'))
     );
+    expect(staffResult).toBe(true);
 
-    expect(result).toBe(true);
+    vi.spyOn(authService, 'getUserRole').mockReturnValue('CUSTOMER');
+    const customerResult = TestBed.runInInjectionContext(() =>
+      customerRoleGuard(createRouteSnapshot({ roles: ['CUSTOMER'] }), createStateSnapshot('/customer/dashboard'))
+    );
+    expect(customerResult).toBe(true);
   });
 });
