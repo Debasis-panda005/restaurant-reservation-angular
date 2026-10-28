@@ -52,7 +52,7 @@ describe('authGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should redirect unauthenticated users to /login with returnUrl query parameter', () => {
+  it('should redirect unauthenticated users to /staff/login with returnUrl query parameter', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
 
     const result = TestBed.runInInjectionContext(() =>
@@ -62,16 +62,17 @@ describe('authGuard', () => {
     expect(result instanceof UrlTree).toBe(true);
     const tree = result as UrlTree;
     expect(tree.root.children['primary'].segments.map((s) => s.path)).toEqual([
+      'staff',
       'login',
     ]);
     expect(tree.queryParams['returnUrl']).toBe('/staff/tables');
   });
 
-  it('should redirect without returnUrl if already targeting /login', () => {
+  it('should redirect without returnUrl if already targeting /staff/login', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard(createRouteSnapshot(), createStateSnapshot('/login'))
+      authGuard(createRouteSnapshot(), createStateSnapshot('/staff/login'))
     );
 
     expect(result instanceof UrlTree).toBe(true);

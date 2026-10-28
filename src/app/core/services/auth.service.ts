@@ -31,7 +31,7 @@ import {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly http = inject(HttpClient, { optional: true });
+  private readonly http = inject(HttpClient);
 
   private readonly API_BASE = '/api/auth';
   private readonly TOKEN_STORAGE_KEY = 'staff_auth_token';
@@ -46,18 +46,6 @@ export class AuthService {
    */
   login(email: string, password: string): Observable<AuthResponse> {
     const payload: LoginRequest = { email, password };
-
-    if (!this.http) {
-      console.warn('HttpClient not available for login');
-      return of({
-        accessToken: 'mock-token',
-        tokenType: 'Bearer',
-        id: 1,
-        name: 'User',
-        email,
-        role: 'CUSTOMER',
-      });
-    }
 
     return this.http.post<AuthResponse>(`${this.API_BASE}/login`, payload).pipe(
       tap((response) => {
@@ -79,10 +67,6 @@ export class AuthService {
       return of(null);
     }
 
-    if (!this.http) {
-      return of(this.getUser());
-    }
-
     return this.http.get<any>(`${this.API_BASE}/me`).pipe(
       map((userData): AuthUser => {
         const resolvedRole = extractUserRole(userData) || userData?.role || '';
@@ -101,7 +85,6 @@ export class AuthService {
         this.currentUser.set(user);
         if (this.isBrowser()) {
           sessionStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(user));
-          sessionStorage.setItem('currentUser', JSON.stringify(user));
         }
         return user;
       }),
@@ -121,20 +104,6 @@ export class AuthService {
   }
 
   /**
-   * Check whether a customer or staff user is logged in.
-   */
-  isLoggedIn(): boolean {
-    return this.isAuthenticated();
-  }
-
-  /**
-   * Retrieve active user synchronously from reactive state or session storage.
-   */
-  getUser(): AuthUser | null {
-    return this.currentUser() || this.getStoredUser();
-  }
-
-  /**
    * Retrieve the active access token if present and not expired.
    */
   getAccessToken(): string | null {
@@ -142,9 +111,7 @@ export class AuthService {
       return null;
     }
 
-    const token =
-      sessionStorage.getItem(this.TOKEN_STORAGE_KEY) ||
-      sessionStorage.getItem('token');
+    const token = sessionStorage.getItem(this.TOKEN_STORAGE_KEY);
     const timestampStr = sessionStorage.getItem(this.TIMESTAMP_STORAGE_KEY);
 
     if (!token || !timestampStr) {
@@ -201,13 +168,12 @@ export class AuthService {
     this.clearSession();
   }
 
-  saveSession(response: AuthResponse): void {
+  private saveSession(response: AuthResponse): void {
     if (!this.isBrowser()) {
       return;
     }
 
     sessionStorage.setItem(this.TOKEN_STORAGE_KEY, response.accessToken);
-    sessionStorage.setItem('token', response.accessToken);
     sessionStorage.setItem(
       this.TIMESTAMP_STORAGE_KEY,
       Date.now().toString()
@@ -227,28 +193,23 @@ export class AuthService {
     };
 
     sessionStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(user));
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
     this.currentUser.set(user);
   }
 
   private clearSession(): void {
     if (this.isBrowser()) {
       sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
-      sessionStorage.removeItem('token');
       sessionStorage.removeItem(this.USER_STORAGE_KEY);
-      sessionStorage.removeItem('currentUser');
       sessionStorage.removeItem(this.TIMESTAMP_STORAGE_KEY);
     }
     this.currentUser.set(null);
   }
 
-  getStoredUser(): AuthUser | null {
+  private getStoredUser(): AuthUser | null {
     if (!this.isBrowser()) {
       return null;
     }
-    const raw =
-      sessionStorage.getItem(this.USER_STORAGE_KEY) ||
-      sessionStorage.getItem('currentUser');
+    const raw = sessionStorage.getItem(this.USER_STORAGE_KEY);
     if (!raw) {
       return null;
     }

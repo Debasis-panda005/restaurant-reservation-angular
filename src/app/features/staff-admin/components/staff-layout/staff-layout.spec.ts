@@ -39,6 +39,6 @@ describe('StaffLayout', () => {
     component.onSignOut();
 
     expect(logoutSpy).toHaveBeenCalled();
-    expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+    expect(navigateSpy).toHaveBeenCalledWith(['/staff/login']);
   });
 });
